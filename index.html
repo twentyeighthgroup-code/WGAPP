@@ -64,6 +64,7 @@
       background: rgba(255,255,255,.04);
       border-radius: 8px;
       font-size: 16px;
+      z-index: 10;
     }
     .score { left: 14px; }
     .hud { right: 14px; }
@@ -79,7 +80,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: transform 0.1s;
+      transition: transform 0.1s, box-shadow 0.3s;
     }
     .player img {
       width: 100%;
@@ -153,6 +154,7 @@
       font-size: 15px;
       color: var(--text);
       touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent; /* Убирает подсветку при нажатии */
     }
     .footer {
       margin-top: 12px;
@@ -215,6 +217,8 @@
       font-size: 10px;
       color: #fff;
       background: rgba(0,0,0,.6);
+      text-align: center;
+      padding: 2px;
     }
     .skin-option.selected {
       border-color: var(--accent);
@@ -242,10 +246,11 @@
       border-radius: 8px;
       font-size: 14px;
       z-index: 40;
-      animation: fadeOut 2s forwards;
+      animation: fadeOut 3s forwards;
     }
     @keyframes fadeOut {
       0% { opacity: 1; transform: translate(-50%, 0); }
+      80% { opacity: 1; transform: translate(-50%, 0); }
       100% { opacity: 0; transform: translate(-50%, -20px); }
     }
     @media (max-width: 640px) {
@@ -280,460 +285,472 @@
   </div>
 
   <script>
-    const tg = window.Telegram.WebApp || null;
-    if (tg) {
-      try {
-        tg.expand();
-        tg.enableClosingConfirmation();
-      } catch (e) {}
-    }
-
-    const stage = document.getElementById('stage');
-    const playerEl = document.getElementById('player');
-    const playerSkin = document.getElementById('player-skin');
-    const scoreEl = document.getElementById('score');
-    const livesEl = document.getElementById('lives');
-    const levelEl = document.getElementById('level');
-
-    const state = {
-      w: stage.clientWidth,
-      h: stage.clientHeight,
-      px: 0,
-      py: 0,
-      vx: 0,
-      vy: 0,
-      onGround: true,
-      score: 0,
-      lives: 3,
-      level: 1,
-      enemies: [],
-      bonuses: [],
-      powerups: [],
-      platforms: [],
-      high: parseInt(localStorage.getItem('wednesdayHigh')) || 0,
-      achievements: JSON.parse(localStorage.getItem('wednesdayAchievements')) || {},
-      jumpCount: 0,
-      bonusCount: 0,
-      invincible: false,
-      invincibleTimer: 0,
-      scoreMultiplier: 1,
-    };
-
-    function refreshSize() {
-      state.w = stage.clientWidth;
-      state.h = stage.clientHeight;
-      state.px = state.w <= 640 ? 60 : 100;
-    }
-    refreshSize();
-    window.addEventListener('resize', refreshSize);
-
-    function makePlatform(x, y, w) {
-      const el = document.createElement('div');
-      el.className = 'platform';
-      el.style.left = `${x}px`;
-      el.style.bottom = `${y}px`;
-      el.style.width = `${w}px`;
-      stage.appendChild(el);
-      state.platforms.push({ x, y, w, el });
-    }
-    // Initial platforms
-    makePlatform(320, 160, 160);
-    makePlatform(520, 240, 120);
-    makePlatform(760, 200, 140);
-
-    function spawnEnemy() {
-      const el = document.createElement('div');
-      el.className = 'enemy';
-      const isFlying = state.level >= 3 && Math.random() > 0.7;
-      if (isFlying) {
-        el.classList.add('flying-enemy');
-        el.style.bottom = `${120 + Math.random() * 100}px`;
+    // --- ИСПРАВЛЕНИЕ 1: Инициализация Telegram Web App ---
+    // Код для работы с Telegram лучше выполнять после полной загрузки страницы
+    document.addEventListener('DOMContentLoaded', () => {
+      const tg = window.Telegram.WebApp;
+      if (tg) {
+        try {
+          tg.ready(); // Сообщаем Telegram, что приложение готово
+          tg.expand();
+          tg.enableClosingConfirmation();
+        } catch (e) {
+          console.error("Telegram Web App error:", e);
+        }
       }
-      const x = state.w + 40;
-      el.style.left = `${x}px`;
-      stage.appendChild(el);
-      state.enemies.push({ x, vx: - (2.2 + state.level * 0.5), el, isFlying });
-    }
 
-    function spawnBonus() {
-      const el = document.createElement('div');
-      el.className = 'bonus';
-      const x = Math.random() * (state.w - 60) + 40;
-      const y = 120 + Math.random() * 200;
-      el.style.left = `${x}px`;
-      el.style.bottom = `${y}px`;
-      stage.appendChild(el);
-      state.bonuses.push({ x, y, el });
-    }
-
-    function spawnPowerup() {
-      const el = document.createElement('div');
-      el.className = 'powerup';
-      const x = Math.random() * (state.w - 60) + 40;
-      const y = 120 + Math.random() * 200;
-      el.style.left = `${x}px`;
-      el.style.bottom = `${y}px`;
-      stage.appendChild(el);
-      state.powerups.push({ x, y, el, type: Math.random() > 0.5 ? 'invincible' : 'extraLife' });
-    }
-
-    let spawnTimer = 0, bonusTimer = 500, powerupTimer = 1000, lastTime = performance.now();
-
-    const keys = { left: false, right: false, jump: false };
-
-    document.addEventListener('keydown', e => {
-      if (e.key === 'ArrowLeft') keys.left = true;
-      if (e.key === 'ArrowRight') keys.right = true;
-      if (e.key === ' ' || e.key === 'ArrowUp') keys.jump = true;
+      // Запускаем игру
+      initGame();
     });
-    document.addEventListener('keyup', e => {
-      if (e.key === 'ArrowLeft') keys.left = false;
-      if (e.key === 'ArrowRight') keys.right = false;
-      if (e.key === ' ' || e.key === 'ArrowUp') keys.jump = false;
-    });
+    
+    // --- ИСПРАВЛЕНИЕ 2: Новая функция для получения CSS-переменных ---
+    // Эта функция получает значение (например, цвет) из CSS
+    function getCSSVar(name) {
+        return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    }
 
-    const leftBtn = document.getElementById('left');
-    const rightBtn = document.getElementById('right');
-    const jumpBtn = document.getElementById('jump');
+    // Вся логика игры вынесена в отдельную функцию для чистоты кода
+    function initGame() {
+      const stage = document.getElementById('stage');
+      const playerEl = document.getElementById('player');
+      const playerSkin = document.getElementById('player-skin');
+      const scoreEl = document.getElementById('score');
+      const livesEl = document.getElementById('lives');
+      const levelEl = document.getElementById('level');
 
-    leftBtn.addEventListener('touchstart', () => keys.left = true, { passive: true });
-    leftBtn.addEventListener('touchend', () => keys.left = false, { passive: true });
-    rightBtn.addEventListener('touchstart', () => keys.right = true, { passive: true });
-    rightBtn.addEventListener('touchend', () => keys.right = false, { passive: true });
-    jumpBtn.addEventListener('touchstart', () => {
-      if (state.onGround) {
-        state.vy = 12 + (state.level * 0.2);
-        state.onGround = false;
-        state.jumpCount++;
-        checkAchievements();
+      // Предотвращаем скролл страницы на мобильных устройствах
+      document.body.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+      
+      let gameLoopId = null; // ID для остановки игрового цикла
+
+      const state = {
+        w: stage.clientWidth,
+        h: stage.clientHeight,
+        px: 0,
+        py: 0,
+        vx: 0,
+        vy: 0,
+        onGround: true,
+        score: 0,
+        lives: 3,
+        level: 1,
+        enemies: [],
+        bonuses: [],
+        powerups: [],
+        platforms: [],
+        high: parseInt(localStorage.getItem('wednesdayHigh')) || 0,
+        achievements: JSON.parse(localStorage.getItem('wednesdayAchievements')) || {},
+        jumpCount: 0,
+        bonusCount: 0,
+        invincible: false,
+        invincibleTimer: 0,
+        scoreMultiplier: 1,
+      };
+
+      function refreshSize() {
+        state.w = stage.clientWidth;
+        state.h = stage.clientHeight;
+        state.px = state.w <= 640 ? 60 : 100;
       }
-    }, { passive: true });
+      refreshSize();
+      window.addEventListener('resize', refreshSize);
 
-    // Swipe controls for better mobile experience
-    let touchStartX = 0, touchStartY = 0;
-    stage.addEventListener('touchstart', e => {
-      touchStartX = e.touches[0].clientX;
-      touchStartY = e.touches[0].clientY;
-    }, { passive: true });
-    stage.addEventListener('touchmove', e => {
-      const deltaX = e.touches[0].clientX - touchStartX;
-      const deltaY = e.touches[0].clientY - touchStartY;
-      if (Math.abs(deltaX) > 20) {
-        keys.left = deltaX < 0;
-        keys.right = deltaX > 0;
+      function makePlatform(x, y, w) {
+        const el = document.createElement('div');
+        el.className = 'platform';
+        el.style.left = `${x}px`;
+        el.style.bottom = `${y}px`;
+        el.style.width = `${w}px`;
+        stage.appendChild(el);
+        state.platforms.push({ x, y, w, el });
       }
-      if (deltaY < -20 && state.onGround) {
-        state.vy = 12 + (state.level * 0.2);
-        state.onGround = false;
-        state.jumpCount++;
-        checkAchievements();
-      }
-    }, { passive: false });
-    stage.addEventListener('touchend', () => {
-      keys.left = false;
-      keys.right = false;
-    }, { passive: true });
+      makePlatform(320, 160, 160);
+      makePlatform(520, 240, 120);
+      makePlatform(760, 200, 140);
 
-    function particleEffect(x, y, color, count = 8) {
-      for (let i = 0; i < count; i++) {
-        const p = document.createElement('div');
-        p.className = 'particles';
-        p.style.width = p.style.height = `${4 + Math.random() * 6}px`;
-        p.style.background = color;
-        p.style.left = `${x}px`;
-        p.style.bottom = `${y}px`; // Changed to bottom for consistency
-        stage.appendChild(p);
-        let vx = (Math.random() - 0.5) * 5;
-        let vy = (Math.random() * 5 + 2); // positive for up
-        let life = 40 + Math.random() * 20;
-        function move() {
-          p.style.left = `${parseFloat(p.style.left) + vx}px`;
-          p.style.bottom = `${parseFloat(p.style.bottom) + vy}px`;
-          vy -= 0.3; // gravity down
-          life--;
-          p.style.opacity = life / 40;
-          if (life <= 0) {
-            stage.removeChild(p);
-          } else {
-            requestAnimationFrame(move);
-          }
+      function spawnEnemy() {
+        const el = document.createElement('div');
+        el.className = 'enemy';
+        const isFlying = state.level >= 3 && Math.random() > 0.7;
+        if (isFlying) {
+          el.classList.add('flying-enemy');
+          el.style.bottom = `${120 + Math.random() * 100}px`;
         }
-        move();
+        const x = state.w + 40;
+        el.style.left = `${x}px`;
+        stage.appendChild(el);
+        state.enemies.push({ x, vx: -(2.2 + state.level * 0.5), el, isFlying });
       }
-    }
 
-    function flashScreen(color = '#ef4444') {
-      stage.style.background = `linear-gradient(180deg, ${color}30, #0f1724)`;
-      setTimeout(updateBackground, 200);
-    }
-
-    function updateBackground() {
-      const bgVar = `--level-bg-${Math.min(state.level, 4)}`;
-      stage.style.background = `var(${bgVar})`;
-    }
-
-    function levelUp() {
-      state.level++;
-      levelEl.textContent = `Уровень: ${state.level}`;
-      updateBackground();
-      particleEffect(state.w / 2, 200, var(--accent), 20);
-      showAchievement(`Уровень ${state.level} достигнут!`);
-      // Add more platforms or change layout
-      if (state.level % 2 === 0) {
-        makePlatform(Math.random() * (state.w - 200) + 100, 180 + Math.random() * 100, 120 + Math.random() * 80);
+      function spawnBonus() {
+        const el = document.createElement('div');
+        el.className = 'bonus';
+        const x = Math.random() * (state.w - 60) + 40;
+        const y = 120 + Math.random() * 200;
+        el.style.left = `${x}px`;
+        el.style.bottom = `${y}px`;
+        stage.appendChild(el);
+        state.bonuses.push({ x, y, el });
       }
-    }
 
-    function checkCollision(aX, aY, aW, aH, bX, bY, bW, bH) {
-      return aX < bX + bW && aX + aW > bX && aY < bY + bH && aY + aH > bY;
-    }
+      function spawnPowerup() {
+        const el = document.createElement('div');
+        el.className = 'powerup';
+        const x = Math.random() * (state.w - 60) + 40;
+        const y = 120 + Math.random() * 200;
+        el.style.left = `${x}px`;
+        el.style.bottom = `${y}px`;
+        stage.appendChild(el);
+        state.powerups.push({ x, y, el, type: Math.random() > 0.5 ? 'invincible' : 'extraLife' });
+      }
 
-    function handlePlatformCollision() {
-      state.onGround = state.py <= 0; // Reset onGround if not on platform
-      for (const p of state.platforms) {
-        const playerBottom = 90 + state.py;
-        const playerTop = playerBottom + 76;
-        const playerLeft = state.px + 10;
-        const playerRight = playerLeft + 36;
-        const platTop = p.y + 12;
-        if (
-          state.vy < 0 && // falling
-          playerLeft < p.x + p.w &&
-          playerRight > p.x &&
-          playerTop > p.y &&
-          playerBottom < platTop
-        ) {
-          state.py = platTop - 90;
-          state.vy = 0;
-          state.onGround = true;
-          break;
+      let spawnTimer = 0, bonusTimer = 500, powerupTimer = 1000, lastTime = performance.now();
+      const keys = { left: false, right: false, jump: false };
+
+      document.addEventListener('keydown', e => {
+        if (e.key === 'ArrowLeft') keys.left = true;
+        if (e.key === 'ArrowRight') keys.right = true;
+        if (e.key === ' ' || e.key === 'ArrowUp') handleJump();
+      });
+      document.addEventListener('keyup', e => {
+        if (e.key === 'ArrowLeft') keys.left = false;
+        if (e.key === 'ArrowRight') keys.right = false;
+      });
+
+      const leftBtn = document.getElementById('left');
+      const rightBtn = document.getElementById('right');
+      const jumpBtn = document.getElementById('jump');
+
+      leftBtn.addEventListener('touchstart', () => keys.left = true, { passive: true });
+      leftBtn.addEventListener('touchend', () => keys.left = false, { passive: true });
+      rightBtn.addEventListener('touchstart', () => keys.right = true, { passive: true });
+      rightBtn.addEventListener('touchend', () => keys.right = false, { passive: true });
+      jumpBtn.addEventListener('touchstart', handleJump, { passive: true });
+
+      function handleJump() {
+        if (state.onGround) {
+          state.vy = 12 + (state.level * 0.2);
+          state.onGround = false;
+          state.jumpCount++;
+          checkAchievements();
         }
       }
-    }
 
-    function checkAchievements() {
-      if (state.jumpCount >= 50 && !state.achievements.jumpMaster) {
-        state.achievements.jumpMaster = true;
-        showAchievement('Мастер прыжков: 50 прыжков!');
-        state.score += 20;
-      }
-      if (state.bonusCount >= 20 && !state.achievements.bonusHunter) {
-        state.achievements.bonusHunter = true;
-        showAchievement('Охотник за бонусами: 20 бонусов!');
-        state.score += 30;
-      }
-      if (state.score >= 100 && !state.achievements.centurion) {
-        state.achievements.centurion = true;
-        showAchievement('Центурион: 100 очков!');
-        state.lives += 1;
-        livesEl.textContent = `Жизни: ${state.lives}`;
-      }
-      localStorage.setItem('wednesdayAchievements', JSON.stringify(state.achievements));
-    }
-
-    function showAchievement(text) {
-      const popup = document.createElement('div');
-      popup.className = 'achievement-popup';
-      popup.textContent = text;
-      stage.appendChild(popup);
-      setTimeout(() => {
-        if (popup.parentNode) stage.removeChild(popup);
-      }, 2000);
-    }
-
-    function tick(currentTime) {
-      const delta = (currentTime - lastTime) / 16.67; // Normalize to 60fps
-      lastTime = currentTime;
-
-      // Input handling
-      if (keys.left) state.vx = Math.max(state.vx - 0.6 * delta, -7 - state.level);
-      else if (keys.right) state.vx = Math.min(state.vx + 0.6 * delta, 7 + state.level);
-      else state.vx *= 0.92 ** delta; // Smoother friction
-
-      if (keys.jump && state.onGround) {
-        state.vy = 12 + (state.level * 0.3);
-        state.onGround = false;
-        keys.jump = false;
-        state.jumpCount++;
-        checkAchievements();
-      }
-
-      // Physics
-      state.vy -= 0.6 * delta; // gravity down
-      state.px += state.vx * delta;
-      state.py += state.vy * delta;
-
-      // Ground collision
-      if (state.py <= 0) {
-        state.py = 0;
-        state.vy = 0;
-        state.onGround = true;
-      }
-
-      // Boundaries
-      state.px = Math.max(8, Math.min(state.px, state.w - 64));
-
-      // Update player position using transform for better perf
-      playerEl.style.transform = `translate(${state.px}px, -${state.py}px)`;
-      playerSkin.style.transform = state.onGround ? `scaleX(${state.vx < 0 ? -1 : 1})` : 'translateY(-6px) scale(1.05)';
-
-      // Enemies
-      for (let i = state.enemies.length - 1; i >= 0; i--) {
-        const e = state.enemies[i];
-        e.x += e.vx * delta * (1 + state.score / 200);
-        e.el.style.left = `${Math.round(e.x)}px`;
-        if (e.isFlying) {
-          e.el.style.bottom = `${parseFloat(e.el.style.bottom) + Math.sin(currentTime / 200) * 0.5}px`;
+      let touchStartX = 0, touchStartY = 0;
+      stage.addEventListener('touchstart', e => {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+      }, { passive: true });
+      stage.addEventListener('touchmove', e => {
+        const deltaX = e.touches[0].clientX - touchStartX;
+        const deltaY = e.touches[0].clientY - touchStartY;
+        if (Math.abs(deltaX) > 20) {
+          keys.left = deltaX < 0;
+          keys.right = deltaX > 0;
         }
-        const px = state.px + 10, py = 90 + state.py + 10, ex = e.x, ey = e.isFlying ? parseFloat(e.el.style.bottom) : 90;
-        if (checkCollision(px, py, 36, 76, ex, ey, 46, 46)) {
-          if (!state.invincible) {
-            state.lives -= 1;
-            livesEl.textContent = `Жизни: ${state.lives}`;
-            flashScreen();
-            if (state.lives <= 0) {
-              gameOver();
-              return;
+        if (deltaY < -20) {
+          handleJump();
+        }
+      }, { passive: true });
+      stage.addEventListener('touchend', () => {
+        keys.left = false;
+        keys.right = false;
+      }, { passive: true });
+
+      function particleEffect(x, y, color, count = 8) {
+        for (let i = 0; i < count; i++) {
+          const p = document.createElement('div');
+          p.className = 'particles';
+          p.style.width = p.style.height = `${4 + Math.random() * 6}px`;
+          p.style.background = color;
+          p.style.left = `${x}px`;
+          p.style.bottom = `${y}px`;
+          stage.appendChild(p);
+          let vx = (Math.random() - 0.5) * 5;
+          let vy = (Math.random() * 5 + 2);
+          let life = 40 + Math.random() * 20;
+          function move() {
+            p.style.left = `${parseFloat(p.style.left) + vx}px`;
+            p.style.bottom = `${parseFloat(p.style.bottom) + vy}px`;
+            vy -= 0.3;
+            life--;
+            p.style.opacity = life / 40;
+            if (life <= 0) {
+              if (p.parentNode) stage.removeChild(p);
+            } else {
+              requestAnimationFrame(move);
             }
           }
-          particleEffect(ex + 23, ey + 23, var(--danger));
-          stage.removeChild(e.el);
-          state.enemies.splice(i, 1);
-        } else if (e.x < -80) {
-          stage.removeChild(e.el);
-          state.enemies.splice(i, 1);
-          state.score += 1 * state.scoreMultiplier;
-          scoreEl.textContent = `Счёт: ${state.score}`;
-          if (state.score >= state.level * 50) levelUp();
-          updateBackground();
+          move();
         }
       }
 
-      // Bonuses
-      for (let i = state.bonuses.length - 1; i >= 0; i--) {
-        const b = state.bonuses[i];
-        const px = state.px + 10, py = 90 + state.py + 10;
-        if (checkCollision(px, py, 36, 76, b.x, b.y, 36, 36)) {
-          state.score += 5 * state.scoreMultiplier;
-          scoreEl.textContent = `Счёт: ${state.score}`;
-          particleEffect(b.x + 18, b.y + 18, var(--safe), 12);
-          stage.removeChild(b.el);
-          state.bonuses.splice(i, 1);
-          state.bonusCount++;
-          checkAchievements();
-          updateBackground();
+      function flashScreen(color = '#ef4444') {
+        stage.style.background = `linear-gradient(180deg, ${color}30, #0f1724)`;
+        setTimeout(updateBackground, 200);
+      }
+
+      function updateBackground() {
+        const bgVar = `--level-bg-${Math.min(state.level, 4)}`;
+        stage.style.background = `var(${bgVar})`;
+      }
+
+      function levelUp() {
+        state.level++;
+        levelEl.textContent = `Уровень: ${state.level}`;
+        updateBackground();
+        // --- ИСПРАВЛЕНИЕ 3: Используем нашу новую функцию ---
+        particleEffect(state.w / 2, 200, getCSSVar('--accent'), 20);
+        showAchievement(`Уровень ${state.level} достигнут!`);
+        if (state.level % 2 === 0) {
+          makePlatform(Math.random() * (state.w - 200) + 100, 180 + Math.random() * 100, 120 + Math.random() * 80);
         }
       }
 
-      // Powerups
-      for (let i = state.powerups.length - 1; i >= 0; i--) {
-        const p = state.powerups[i];
-        const px = state.px + 10, py = 90 + state.py + 10;
-        if (checkCollision(px, py, 36, 76, p.x, p.y, 36, 36)) {
-          if (p.type === 'invincible') {
-            state.invincible = true;
-            state.invincibleTimer = 300; // ~5 seconds at 60fps
-            playerEl.style.boxShadow = '0 0 20px var(--powerup)';
-          } else if (p.type === 'extraLife') {
-            state.lives += 1;
-            livesEl.textContent = `Жизни: ${state.lives}`;
-            flashScreen(var(--safe));
+      function checkCollision(aX, aY, aW, aH, bX, bY, bW, bH) {
+        return aX < bX + bW && aX + aW > bX && aY < bY + bH && aY + aH > bY;
+      }
+
+      function handlePlatformCollision() {
+        let onAnyPlatform = false;
+        for (const p of state.platforms) {
+          const playerBottom = 90 + state.py;
+          const playerLeft = state.px + 10;
+          const playerRight = playerLeft + 36;
+          const platTop = p.y + 12;
+
+          if (
+            state.vy <= 0 &&
+            playerLeft < p.x + p.w &&
+            playerRight > p.x &&
+            playerBottom >= p.y &&
+            playerBottom <= platTop + 5 
+          ) {
+            state.py = platTop - 90;
+            state.vy = 0;
+            onAnyPlatform = true;
+            break; 
           }
-          particleEffect(p.x + 18, p.y + 18, var(--powerup), 15);
-          stage.removeChild(p.el);
-          state.powerups.splice(i, 1);
+        }
+        state.onGround = onAnyPlatform || state.py <= 0;
+      }
+
+      function checkAchievements() {
+        if (state.jumpCount >= 50 && !state.achievements.jumpMaster) {
+          state.achievements.jumpMaster = true;
+          showAchievement('Мастер прыжков: 50 прыжков!');
+          state.score += 20;
+        }
+        if (state.bonusCount >= 20 && !state.achievements.bonusHunter) {
+          state.achievements.bonusHunter = true;
+          showAchievement('Охотник за бонусами: 20 бонусов!');
+          state.score += 30;
+        }
+        if (state.score >= 100 && !state.achievements.centurion) {
+          state.achievements.centurion = true;
+          showAchievement('Центурион: 100 очков!');
+          state.lives += 1;
+          livesEl.textContent = `Жизни: ${state.lives}`;
+        }
+        localStorage.setItem('wednesdayAchievements', JSON.stringify(state.achievements));
+      }
+
+      function showAchievement(text) {
+        const popup = document.createElement('div');
+        popup.className = 'achievement-popup';
+        popup.textContent = text;
+        stage.appendChild(popup);
+        setTimeout(() => {
+          if (popup.parentNode) stage.removeChild(popup);
+        }, 3000);
+      }
+
+      function tick(currentTime) {
+        const delta = Math.min(2, (currentTime - lastTime) / 16.67);
+        lastTime = currentTime;
+
+        if (keys.left) state.vx = Math.max(state.vx - 0.6 * delta, -7 - state.level);
+        else if (keys.right) state.vx = Math.min(state.vx + 0.6 * delta, 7 + state.level);
+        else state.vx *= 0.92 ** delta;
+
+        state.vy -= 0.6 * delta;
+        state.px += state.vx * delta;
+        state.py += state.vy * delta;
+
+        if (state.py <= 0) {
+          state.py = 0;
+          state.vy = 0;
+          state.onGround = true;
+        }
+
+        handlePlatformCollision();
+
+        state.px = Math.max(8, Math.min(state.px, state.w - 64));
+        playerEl.style.transform = `translate(${state.px}px, -${state.py}px)`;
+        playerSkin.style.transform = `scaleX(${state.vx < -0.1 ? -1 : (state.vx > 0.1 ? 1 : (playerSkin.style.transform.includes('-1') ? -1 : 1))})`;
+
+
+        for (let i = state.enemies.length - 1; i >= 0; i--) {
+          const e = state.enemies[i];
+          e.x += e.vx * delta * (1 + state.score / 200);
+          e.el.style.left = `${Math.round(e.x)}px`;
+          if (e.isFlying) {
+            e.el.style.bottom = `${parseFloat(e.el.style.bottom) + Math.sin(currentTime / 200) * 0.5}px`;
+          }
+          const px = state.px + 10, py = 90 + state.py + 10, ex = e.x, ey = e.isFlying ? parseFloat(e.el.style.bottom) : 90;
+          if (checkCollision(px, py, 36, 76, ex, ey, 46, 46)) {
+            if (!state.invincible) {
+              state.lives -= 1;
+              livesEl.textContent = `Жизни: ${state.lives}`;
+              flashScreen();
+              if (state.lives <= 0) {
+                gameOver();
+                return;
+              }
+            }
+            particleEffect(ex + 23, ey + 23, getCSSVar('--danger'));
+            stage.removeChild(e.el);
+            state.enemies.splice(i, 1);
+          } else if (e.x < -80) {
+            stage.removeChild(e.el);
+            state.enemies.splice(i, 1);
+            state.score += 1 * state.scoreMultiplier;
+            scoreEl.textContent = `Счёт: ${state.score}`;
+            if (state.score >= state.level * 50) levelUp();
+            updateBackground();
+          }
+        }
+
+        for (let i = state.bonuses.length - 1; i >= 0; i--) {
+          const b = state.bonuses[i];
+          const px = state.px + 10, py = 90 + state.py + 10;
+          if (checkCollision(px, py, 36, 76, b.x, b.y, 36, 36)) {
+            state.score += 5 * state.scoreMultiplier;
+            scoreEl.textContent = `Счёт: ${state.score}`;
+            particleEffect(b.x + 18, b.y + 18, getCSSVar('--safe'), 12);
+            stage.removeChild(b.el);
+            state.bonuses.splice(i, 1);
+            state.bonusCount++;
+            checkAchievements();
+            updateBackground();
+          }
+        }
+
+        for (let i = state.powerups.length - 1; i >= 0; i--) {
+          const p = state.powerups[i];
+          const px = state.px + 10, py = 90 + state.py + 10;
+          if (checkCollision(px, py, 36, 76, p.x, p.y, 36, 36)) {
+            if (p.type === 'invincible') {
+              state.invincible = true;
+              state.invincibleTimer = 300;
+              playerEl.style.boxShadow = '0 0 20px ' + getCSSVar('--powerup');
+            } else if (p.type === 'extraLife') {
+              state.lives += 1;
+              livesEl.textContent = `Жизни: ${state.lives}`;
+              flashScreen(getCSSVar('--safe'));
+            }
+            particleEffect(p.x + 18, p.y + 18, getCSSVar('--powerup'), 15);
+            stage.removeChild(p.el);
+            state.powerups.splice(i, 1);
+          }
+        }
+
+        if (state.invincible) {
+          state.invincibleTimer -= delta;
+          if (state.invincibleTimer <= 0) {
+            state.invincible = false;
+            playerEl.style.boxShadow = 'none';
+          }
+        }
+
+        spawnTimer -= delta;
+        bonusTimer -= delta;
+        powerupTimer -= delta;
+        if (spawnTimer <= 0) {
+          spawnEnemy();
+          spawnTimer = Math.max(20, 80 + Math.random() * 120 - state.level * 10);
+        }
+        if (bonusTimer <= 0) {
+          spawnBonus();
+          bonusTimer = Math.max(200, 600 + Math.random() * 400 - state.level * 50);
+        }
+        if (powerupTimer <= 0 && state.level >= 2) {
+          spawnPowerup();
+          powerupTimer = Math.max(500, 1200 + Math.random() * 800 - state.level * 100);
+        }
+
+        gameLoopId = requestAnimationFrame(tick);
+      }
+
+      function gameOver() {
+        cancelAnimationFrame(gameLoopId); // Останавливаем игровой цикл
+        if (state.score > state.high) {
+          localStorage.setItem('wednesdayHigh', state.score);
+          state.high = state.score;
+        }
+        unlockSkins();
+        const overlay = document.createElement('div');
+        overlay.className = 'overlay';
+        let achList = '<h3>Достижения:</h3><ul>';
+        for (const [key, val] of Object.entries(state.achievements)) {
+          if (val) achList += `<li>${key === 'jumpMaster' ? 'Мастер прыжков' : key === 'bonusHunter' ? 'Охотник за бонусами' : 'Центурион'}</li>`;
+        }
+        if (Object.values(state.achievements).every(v => !v)) {
+            achList = ''; // Не показываем заголовок, если нет достижений
+        } else {
+            achList += '</ul>';
+        }
+        
+        overlay.innerHTML = `<h2>Игра окончена</h2><p>Счёт: ${state.score}</p><p>Рекорд: ${state.high}</p>${achList}<button id='restart'>Заново</button>`;
+        stage.appendChild(overlay);
+        document.getElementById('restart').addEventListener('click', () => location.reload());
+
+        const tg = window.Telegram.WebApp;
+        if (tg && tg.MainButton) {
+          try {
+            tg.MainButton.setText('Заново');
+            tg.MainButton.show();
+            tg.MainButton.onClick(() => location.reload());
+          } catch (e) { console.error(e); }
         }
       }
 
-      // Invincibility timer
-      if (state.invincible) {
-        state.invincibleTimer -= delta;
-        if (state.invincibleTimer <= 0) {
-          state.invincible = false;
-          playerEl.style.boxShadow = 'none';
+      function unlockSkins() {
+        document.querySelectorAll('.skin-option.locked').forEach(opt => {
+          const need = parseInt(opt.dataset.unlock);
+          if (state.high >= need) {
+            opt.classList.remove('locked');
+            opt.removeAttribute('data-unlock');
+          }
+        });
+      }
+
+      const selector = document.getElementById('skin-selector');
+      selector.addEventListener('click', e => {
+        const opt = e.target.closest('.skin-option');
+        if (opt && !opt.classList.contains('locked')) {
+          document.querySelectorAll('.skin-option').forEach(el => el.classList.remove('selected'));
+          opt.classList.add('selected');
+          playerSkin.src = opt.dataset.skin;
+          localStorage.setItem('wednesdaySkin', opt.dataset.skin);
         }
-      }
+      });
 
-      // Spawning
-      spawnTimer -= delta;
-      bonusTimer -= delta;
-      powerupTimer -= delta;
-      if (spawnTimer <= 0) {
-        spawnEnemy();
-        spawnTimer = 80 + Math.floor(Math.random() * 120) - (state.level * 10);
-      }
-      if (bonusTimer <= 0) {
-        spawnBonus();
-        bonusTimer = 600 + Math.floor(Math.random() * 400) - (state.level * 50);
-      }
-      if (powerupTimer <= 0 && state.level >= 2) {
-        spawnPowerup();
-        powerupTimer = 1200 + Math.floor(Math.random() * 800) - (state.level * 100);
-      }
-
-      // Platform collision
-      handlePlatformCollision();
-
-      requestAnimationFrame(tick);
-    }
-
-    function gameOver() {
-      if (state.score > state.high) {
-        localStorage.setItem('wednesdayHigh', state.score);
-        state.high = state.score;
+      const savedSkin = localStorage.getItem('wednesdaySkin');
+      if (savedSkin) {
+        let skinFound = false;
+        document.querySelectorAll('.skin-option').forEach(el => {
+          const isSelected = el.dataset.skin === savedSkin;
+          el.classList.toggle('selected', isSelected);
+          if(isSelected) skinFound = true;
+        });
+        if(skinFound) playerSkin.src = savedSkin;
       }
       unlockSkins();
-      const overlay = document.createElement('div');
-      overlay.className = 'overlay';
-      let achList = '<h3>Достижения:</h3><ul>';
-      for (const [key, val] of Object.entries(state.achievements)) {
-        if (val) achList += `<li>${key === 'jumpMaster' ? 'Мастер прыжков' : key === 'bonusHunter' ? 'Охотник за бонусами' : key === 'centurion' ? 'Центурион' : ''}</li>`;
-      }
-      achList += '</ul>';
-      overlay.innerHTML = `<h2>Игра окончена</h2><p>Счёт: ${state.score}</p><p>Рекорд: ${state.high}</p>${achList}<button id='restart'>Заново</button>`;
-      stage.appendChild(overlay);
-      document.getElementById('restart').addEventListener('click', () => location.reload());
-      if (tg && tg.MainButton) {
-        try {
-          tg.MainButton.setText('Заново');
-          tg.MainButton.show();
-          tg.MainButton.onClick(() => location.reload());
-        } catch (e) {}
-      }
+
+      // Первый запуск игры
+      gameLoopId = requestAnimationFrame(tick);
     }
-
-    function unlockSkins() {
-      document.querySelectorAll('.skin-option.locked').forEach(opt => {
-        const need = parseInt(opt.dataset.unlock);
-        if (state.high >= need) {
-          opt.classList.remove('locked');
-          opt.removeAttribute('data-unlock');
-        }
-      });
-    }
-
-    requestAnimationFrame(tick);
-    document.body.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
-
-    const selector = document.getElementById('skin-selector');
-    selector.addEventListener('click', e => {
-      const opt = e.target.closest('.skin-option');
-      if (opt && !opt.classList.contains('locked')) {
-        document.querySelectorAll('.skin-option').forEach(el => el.classList.remove('selected'));
-        opt.classList.add('selected');
-        playerSkin.src = opt.dataset.skin;
-        localStorage.setItem('wednesdaySkin', opt.dataset.skin);
-      }
-    });
-
-    const savedSkin = localStorage.getItem('wednesdaySkin');
-    if (savedSkin) {
-      playerSkin.src = savedSkin;
-      document.querySelectorAll('.skin-option').forEach(el => {
-        if (el.dataset.skin === savedSkin) el.classList.add('selected');
-      });
-    }
-    unlockSkins();
   </script>
 </body>
 </html>
