@@ -2,38 +2,258 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Wednesday Mega Update Game</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>Wednesday Game</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-    :root{
-      --bg:#0b0f14;--floor:#111517;--accent:#8b5cf6;--accent2:#f97316;--text:#f3f4f6;--danger:#ef4444;--safe:#22c55e
+    :root {
+      --bg: #0b0f14;
+      --floor: #111517;
+      --accent: #8b5cf6;
+      --accent2: #f97316;
+      --text: #f3f4f6;
+      --danger: #ef4444;
+      --safe: #22c55e;
+      --powerup: #eab308;
+      --level-bg-1: linear-gradient(180deg, #0b0f14 0%, #0f1724 70%);
+      --level-bg-2: linear-gradient(180deg, #0b0f1a 0%, #162035 70%);
+      --level-bg-3: linear-gradient(180deg, #1c1c3c 0%, #3c1c3c 70%);
+      --level-bg-4: linear-gradient(180deg, #2a0a0a 0%, #4a1a1a 70%);
     }
-    html,body{height:100%;margin:0;font-family:Inter, system-ui, sans-serif;background:var(--bg);color:var(--text);-webkit-user-select:none;overflow:hidden}
-    #game{display:flex;flex-direction:column;height:100vh;align-items:center;justify-content:center}
-    .stage{position:relative;width:100%;max-width:920px;height:520px;background:linear-gradient(180deg,#0b0f14 0%,#0f1724 70%);border-radius:14px;box-shadow:0 6px 30px rgba(2,6,23,.6);overflow:hidden;transition:background 1s}
-    .floor{position:absolute;left:0;right:0;bottom:0;height:90px;background:linear-gradient(180deg,var(--floor),#0b0f1a)}
-    .score,.hud{position:absolute;top:14px;padding:6px 10px;background:rgba(255,255,255,.04);border-radius:8px;font-size:16px}
-    .score{left:14px}
-    .hud{right:14px}
-    .player{position:absolute;bottom:90px;left:100px;width:56px;height:86px;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center}
-    .player img{width:100%;height:100%;object-fit:cover;transition:transform 0.2s}
-    .enemy{position:absolute;bottom:90px;width:46px;height:46px;background:var(--danger);border-radius:6px;box-shadow:0 6px 18px rgba(239,68,68,.15)}
-    .bonus{position:absolute;width:36px;height:36px;border-radius:50%;background:var(--safe);bottom:120px;box-shadow:0 4px 12px rgba(34,197,94,.3)}
-    .platform{position:absolute;height:12px;background:linear-gradient(90deg,#0f1724,#111827);border-radius:6px}
-    .controls{display:flex;gap:8px;margin-top:14px}
-    .btn{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.03);padding:12px 16px;border-radius:8px;font-size:15px;color:var(--text)}
-    .footer{margin-top:12px;color:rgba(255,255,255,.5);font-size:13px;text-align:center;max-width:90%}
-    .overlay{position:absolute;inset:0;background:rgba(0,0,0,.7);display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text);z-index:50}
-    .overlay button{margin-top:14px;padding:10px 16px;border-radius:8px;background:var(--accent);border:none;color:#fff;font-size:16px;cursor:pointer}
-    .skin-selector{margin-top:10px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
-    .skin-option{width:46px;height:70px;border:2px solid transparent;border-radius:6px;overflow:hidden;cursor:pointer;opacity:1;position:relative}
-    .skin-option.locked{opacity:0.3;cursor:not-allowed}
-    .skin-option.locked::after{content:attr(data-unlock);position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;background:rgba(0,0,0,.6)}
-    .skin-option.selected{border-color:var(--accent)}
-    .skin-option img{width:100%;height:100%;object-fit:cover}
-    .particles{position:absolute;pointer-events:none;border-radius:50%}
-    @media (max-width:640px){.stage{height:68vh} .player{left:60px;width:46px;height:70px}}
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: Inter, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-user-select: none;
+      user-select: none;
+      overflow: hidden;
+      touch-action: manipulation;
+    }
+    #game {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      align-items: center;
+      justify-content: center;
+    }
+    .stage {
+      position: relative;
+      width: 100%;
+      max-width: 920px;
+      height: 520px;
+      background: var(--level-bg-1);
+      border-radius: 14px;
+      box-shadow: 0 6px 30px rgba(2,6,23,.6);
+      overflow: hidden;
+      transition: background 1s;
+    }
+    .floor {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 90px;
+      background: linear-gradient(180deg, var(--floor), #0b0f1a);
+    }
+    .score, .hud, .level {
+      position: absolute;
+      top: 14px;
+      padding: 6px 10px;
+      background: rgba(255,255,255,.04);
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    .score { left: 14px; }
+    .hud { right: 14px; }
+    .level { left: 50%; transform: translateX(-50%); }
+    .player {
+      position: absolute;
+      bottom: 90px;
+      left: 100px;
+      width: 56px;
+      height: 86px;
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.1s;
+    }
+    .player img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.2s;
+    }
+    .enemy {
+      position: absolute;
+      bottom: 90px;
+      width: 46px;
+      height: 46px;
+      background: var(--danger);
+      border-radius: 6px;
+      box-shadow: 0 6px 18px rgba(239,68,68,.15);
+      transition: transform 0.05s;
+    }
+    .flying-enemy {
+      background: #dc2626;
+      border-radius: 50%;
+      animation: fly 1s infinite alternate ease-in-out;
+    }
+    @keyframes fly {
+      from { transform: translateY(0); }
+      to { transform: translateY(-20px); }
+    }
+    .bonus {
+      position: absolute;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--safe);
+      bottom: 120px;
+      box-shadow: 0 4px 12px rgba(34,197,94,.3);
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+    .powerup {
+      position: absolute;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--powerup);
+      box-shadow: 0 4px 12px rgba(234,179,8,.3);
+      animation: rotate 2s infinite linear;
+    }
+    @keyframes rotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .platform {
+      position: absolute;
+      height: 12px;
+      background: linear-gradient(90deg, #0f1724, #111827);
+      border-radius: 6px;
+    }
+    .controls {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .btn {
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.03);
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 15px;
+      color: var(--text);
+      touch-action: manipulation;
+    }
+    .footer {
+      margin-top: 12px;
+      color: rgba(255,255,255,.5);
+      font-size: 13px;
+      text-align: center;
+      max-width: 90%;
+    }
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,.7);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--text);
+      z-index: 50;
+      padding: 20px;
+      text-align: center;
+    }
+    .overlay button {
+      margin-top: 14px;
+      padding: 10px 16px;
+      border-radius: 8px;
+      background: var(--accent);
+      border: none;
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .skin-selector {
+      margin-top: 10px;
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .skin-option {
+      width: 46px;
+      height: 70px;
+      border: 2px solid transparent;
+      border-radius: 6px;
+      overflow: hidden;
+      cursor: pointer;
+      position: relative;
+      transition: border-color 0.2s, opacity 0.2s;
+    }
+    .skin-option.locked {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+    .skin-option.locked::after {
+      content: attr(data-unlock);
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: #fff;
+      background: rgba(0,0,0,.6);
+    }
+    .skin-option.selected {
+      border-color: var(--accent);
+    }
+    .skin-option img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .particles {
+      position: absolute;
+      pointer-events: none;
+      border-radius: 50%;
+      opacity: 0.8;
+      transition: opacity 0.5s;
+    }
+    .achievement-popup {
+      position: absolute;
+      top: 50px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--accent);
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 40;
+      animation: fadeOut 2s forwards;
+    }
+    @keyframes fadeOut {
+      0% { opacity: 1; transform: translate(-50%, 0); }
+      100% { opacity: 0; transform: translate(-50%, -20px); }
+    }
+    @media (max-width: 640px) {
+      .stage { height: 68vh; }
+      .player { left: 60px; width: 46px; height: 70px; }
+      .controls { gap: 4px; }
+      .btn { padding: 10px 14px; font-size: 14px; }
+    }
   </style>
 </head>
 <body>
@@ -41,6 +261,7 @@
     <div class="stage" id="stage">
       <div class="score" id="score">Счёт: 0</div>
       <div class="hud" id="lives">Жизни: 3</div>
+      <div class="level" id="level">Уровень: 1</div>
       <div class="floor"></div>
       <div class="player" id="player"><img id="player-skin" src="https://i.ibb.co/vJnkk3Q/wednesday.png" alt="skin"/></div>
     </div>
@@ -53,85 +274,464 @@
       <div class="skin-option selected" data-skin="https://i.ibb.co/vJnkk3Q/wednesday.png"><img src="https://i.ibb.co/vJnkk3Q/wednesday.png"/></div>
       <div class="skin-option locked" data-unlock="50 очков" data-skin="https://i.ibb.co/dfm1jGn/addams.png"><img src="https://i.ibb.co/dfm1jGn/addams.png"/></div>
       <div class="skin-option locked" data-unlock="120 очков" data-skin="https://i.ibb.co/mCk2pHk/mystery.png"><img src="https://i.ibb.co/mCk2pHk/mystery.png"/></div>
+      <div class="skin-option locked" data-unlock="200 очков" data-skin="https://example.com/new-skin1.png"><img src="https://example.com/new-skin1.png"/></div> <!-- Add more skins -->
+      <div class="skin-option locked" data-unlock="300 очков" data-skin="https://example.com/new-skin2.png"><img src="https://example.com/new-skin2.png"/></div>
     </div>
-    <div class="footer">Mega Update: уровни, награды, эффекты и достижения 🎉</div>
+    <div class="footer">&copy; 2025 Tegcompany. Все права защищены.</div>
   </div>
 
   <script>
     const tg = window.Telegram.WebApp || null;
-    if (tg){try{tg.expand();}catch(e){}}
-
-    const stage=document.getElementById('stage');
-    const playerEl=document.getElementById('player');
-    const playerSkin=document.getElementById('player-skin');
-    const scoreEl=document.getElementById('score');
-    const livesEl=document.getElementById('lives');
-
-    const state={w:stage.clientWidth,h:stage.clientHeight,px:100,py:0,vx:0,vy:0,onGround:true,score:0,lives:3,enemies:[],bonuses:[],platforms:[],high:localStorage.getItem('wednesdayHigh')||0};
-
-    function refreshSize(){state.w=stage.clientWidth;state.h=stage.clientHeight;}
-    window.addEventListener('resize',refreshSize);
-
-    function makePlatform(x,y,w){const el=document.createElement('div');el.className='platform';el.style.left=x+'px';el.style.bottom=y+'px';el.style.width=w+'px';stage.appendChild(el);state.platforms.push({x,y,w,el});}
-    makePlatform(320,160,160);makePlatform(520,240,120);makePlatform(760,200,140);
-
-    function spawnEnemy(){const el=document.createElement('div');el.className='enemy';const x=state.w+40;el.style.left=x+'px';el.style.bottom=90+'px';stage.appendChild(el);state.enemies.push({x,vx:-2.2,el});}
-    function spawnBonus(){const el=document.createElement('div');el.className='bonus';const x=Math.random()*(state.w-60)+40;const y=120+Math.random()*200;el.style.left=x+'px';el.style.bottom=y+'px';stage.appendChild(el);state.bonuses.push({x,y,el});}
-
-    let spawnTimer=0,bonusTimer=500;
-
-    let keys={left:false,right:false,jump:false};
-    document.addEventListener('keydown',e=>{if(e.key==='ArrowLeft')keys.left=true;if(e.key==='ArrowRight')keys.right=true;if(e.key===' '||e.key==='ArrowUp')keys.jump=true;});
-    document.addEventListener('keyup',e=>{if(e.key==='ArrowLeft')keys.left=false;if(e.key==='ArrowRight')keys.right=false;if(e.key===' '||e.key==='ArrowUp')keys.jump=false;});
-    document.getElementById('left').addEventListener('touchstart',()=>keys.left=true);
-    document.getElementById('left').addEventListener('touchend',()=>keys.left=false);
-    document.getElementById('right').addEventListener('touchstart',()=>keys.right=true);
-    document.getElementById('right').addEventListener('touchend',()=>keys.right=false);
-    document.getElementById('jump').addEventListener('touchstart',()=>{if(state.onGround){state.vy=-12;state.onGround=false;}});
-
-    function particleEffect(x,y,color){for(let i=0;i<6;i++){const p=document.createElement('div');p.className='particles';p.style.width=p.style.height=(4+Math.random()*6)+'px';p.style.background=color;p.style.left=x+'px';p.style.top=y+'px';stage.appendChild(p);let vx=(Math.random()-0.5)*4,vy=(Math.random()-1)*4;let life=30;function move(){p.style.left=(parseFloat(p.style.left)+vx)+'px';p.style.top=(parseFloat(p.style.top)+vy)+'px';vy+=0.2;life--;if(life<=0){stage.removeChild(p);}else requestAnimationFrame(move);}move();}}
-
-    function flashScreen(){stage.style.background='linear-gradient(180deg,#3f0b0b,#0f1724)';setTimeout(()=>updateBackground(),200);}
-
-    function updateBackground(){if(state.score>100){stage.style.background='linear-gradient(180deg,#1c1c3c,#3c1c3c)';}else if(state.score>50){stage.style.background='linear-gradient(180deg,#0b0f1a,#162035)';}else{stage.style.background='linear-gradient(180deg,#0b0f14,#0f1724)';}}
-
-    function tick(){
-      if(keys.left)state.vx=Math.max(state.vx-0.5,-6);else if(keys.right)state.vx=Math.min(state.vx+0.5,6);else state.vx*=0.85;
-      if(keys.jump&&state.onGround){state.vy=-12;state.onGround=false;keys.jump=false;}
-      state.vy+=0.6;state.px+=state.vx;state.py+=state.vy;
-      if(state.py<=0){state.py=0;state.vy=0;state.onGround=true;}
-      state.px=Math.max(8,Math.min(state.px,state.w-64));
-      playerEl.style.left=Math.round(state.px)+'px';playerEl.style.bottom=(90+state.py)+'px';
-      playerSkin.style.transform=state.onGround?`scaleX(${state.vx<0?-1:1})`:'translateY(-6px)';
-
-      for(let i=state.enemies.length-1;i>=0;i--){const e=state.enemies[i];e.x+=e.vx*(1+state.score/200);e.el.style.left=Math.round(e.x)+'px';const px=state.px+10,py=90+state.py+10;const ex=e.x,ey=90;if(px<ex+46&&px+36>ex&&py<ey+46&&py+76>ey){state.lives-=1;livesEl.textContent='Жизни: '+state.lives;flashScreen();stage.removeChild(e.el);state.enemies.splice(i,1);if(state.lives<=0){gameOver();return;}}if(e.x<-80){stage.removeChild(e.el);state.enemies.splice(i,1);state.score+=1;scoreEl.textContent='Счёт: '+state.score;updateBackground();}}
-
-      for(let i=state.bonuses.length-1;i>=0;i--){const b=state.bonuses[i];const px=state.px+10,py=90+state.py+10;if(px<b.x+36&&px+36>b.x&&py<b.y+36&&py+76>b.y){state.score+=5;scoreEl.textContent='Счёт: '+state.score;particleEffect(b.x,b.y,'#22c55e');stage.removeChild(b.el);state.bonuses.splice(i,1);updateBackground();}}
-
-      spawnTimer-=1;bonusTimer-=1;if(spawnTimer<=0){spawnEnemy();spawnTimer=80+Math.floor(Math.random()*120);}if(bonusTimer<=0){spawnBonus();bonusTimer=600+Math.floor(Math.random()*400);}requestAnimationFrame(tick);
+    if (tg) {
+      try {
+        tg.expand();
+        tg.enableClosingConfirmation();
+      } catch (e) {}
     }
 
-    function gameOver(){if(state.score>state.high){localStorage.setItem('wednesdayHigh',state.score);state.high=state.score;}unlockSkins();const overlay=document.createElement('div');overlay.className='overlay';overlay.innerHTML=`<h2>Игра окончена</h2><p>Счёт: ${state.score}</p><p>Рекорд: ${state.high}</p><button id='restart'>Заново</button>`;stage.appendChild(overlay);document.getElementById('restart').addEventListener('click',()=>location.reload());if(tg&&tg.MainButton){try{tg.MainButton.setText('Заново');tg.MainButton.show();tg.MainButton.onClick(()=>location.reload());}catch(e){}}}
+    const stage = document.getElementById('stage');
+    const playerEl = document.getElementById('player');
+    const playerSkin = document.getElementById('player-skin');
+    const scoreEl = document.getElementById('score');
+    const livesEl = document.getElementById('lives');
+    const levelEl = document.getElementById('level');
 
-    function unlockSkins(){document.querySelectorAll('.skin-option.locked').forEach(opt=>{const need=parseInt(opt.dataset.unlock);if(state.high>=need){opt.classList.remove('locked');opt.removeAttribute('data-unlock');}});}
+    const state = {
+      w: stage.clientWidth,
+      h: stage.clientHeight,
+      px: 100,
+      py: 0,
+      vx: 0,
+      vy: 0,
+      onGround: true,
+      score: 0,
+      lives: 3,
+      level: 1,
+      enemies: [],
+      bonuses: [],
+      powerups: [],
+      platforms: [],
+      high: parseInt(localStorage.getItem('wednesdayHigh')) || 0,
+      achievements: JSON.parse(localStorage.getItem('wednesdayAchievements')) || {},
+      jumpCount: 0,
+      bonusCount: 0,
+      invincible: false,
+      invincibleTimer: 0,
+      scoreMultiplier: 1,
+    };
+
+    function refreshSize() {
+      state.w = stage.clientWidth;
+      state.h = stage.clientHeight;
+    }
+    window.addEventListener('resize', refreshSize);
+
+    function makePlatform(x, y, w) {
+      const el = document.createElement('div');
+      el.className = 'platform';
+      el.style.left = `${x}px`;
+      el.style.bottom = `${y}px`;
+      el.style.width = `${w}px`;
+      stage.appendChild(el);
+      state.platforms.push({ x, y, w, el });
+    }
+    // Initial platforms
+    makePlatform(320, 160, 160);
+    makePlatform(520, 240, 120);
+    makePlatform(760, 200, 140);
+
+    function spawnEnemy() {
+      const el = document.createElement('div');
+      el.className = 'enemy';
+      const isFlying = state.level >= 3 && Math.random() > 0.7;
+      if (isFlying) {
+        el.classList.add('flying-enemy');
+        el.style.bottom = `${120 + Math.random() * 100}px`;
+      }
+      const x = state.w + 40;
+      el.style.left = `${x}px`;
+      stage.appendChild(el);
+      state.enemies.push({ x, vx: - (2.2 + state.level * 0.5), el, isFlying });
+    }
+
+    function spawnBonus() {
+      const el = document.createElement('div');
+      el.className = 'bonus';
+      const x = Math.random() * (state.w - 60) + 40;
+      const y = 120 + Math.random() * 200;
+      el.style.left = `${x}px`;
+      el.style.bottom = `${y}px`;
+      stage.appendChild(el);
+      state.bonuses.push({ x, y, el });
+    }
+
+    function spawnPowerup() {
+      const el = document.createElement('div');
+      el.className = 'powerup';
+      const x = Math.random() * (state.w - 60) + 40;
+      const y = 120 + Math.random() * 200;
+      el.style.left = `${x}px`;
+      el.style.bottom = `${y}px`;
+      stage.appendChild(el);
+      state.powerups.push({ x, y, el, type: Math.random() > 0.5 ? 'invincible' : 'extraLife' });
+    }
+
+    let spawnTimer = 0, bonusTimer = 500, powerupTimer = 1000, lastTime = performance.now();
+
+    const keys = { left: false, right: false, jump: false };
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'ArrowLeft') keys.left = true;
+      if (e.key === 'ArrowRight') keys.right = true;
+      if (e.key === ' ' || e.key === 'ArrowUp') keys.jump = true;
+    });
+    document.addEventListener('keyup', e => {
+      if (e.key === 'ArrowLeft') keys.left = false;
+      if (e.key === 'ArrowRight') keys.right = false;
+      if (e.key === ' ' || e.key === 'ArrowUp') keys.jump = false;
+    });
+
+    const leftBtn = document.getElementById('left');
+    const rightBtn = document.getElementById('right');
+    const jumpBtn = document.getElementById('jump');
+
+    leftBtn.addEventListener('touchstart', () => keys.left = true, { passive: true });
+    leftBtn.addEventListener('touchend', () => keys.left = false, { passive: true });
+    rightBtn.addEventListener('touchstart', () => keys.right = true, { passive: true });
+    rightBtn.addEventListener('touchend', () => keys.right = false, { passive: true });
+    jumpBtn.addEventListener('touchstart', () => {
+      if (state.onGround) {
+        state.vy = -12 - (state.level * 0.2);
+        state.onGround = false;
+        state.jumpCount++;
+        checkAchievements();
+      }
+    }, { passive: true });
+
+    // Swipe controls for better mobile experience
+    let touchStartX = 0, touchStartY = 0;
+    stage.addEventListener('touchstart', e => {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+    stage.addEventListener('touchmove', e => {
+      const deltaX = e.touches[0].clientX - touchStartX;
+      const deltaY = e.touches[0].clientY - touchStartY;
+      if (Math.abs(deltaX) > 20) {
+        keys.left = deltaX < 0;
+        keys.right = deltaX > 0;
+      }
+      if (deltaY < -20 && state.onGround) {
+        state.vy = -12 - (state.level * 0.2);
+        state.onGround = false;
+        state.jumpCount++;
+        checkAchievements();
+      }
+    }, { passive: false });
+    stage.addEventListener('touchend', () => {
+      keys.left = false;
+      keys.right = false;
+    }, { passive: true });
+
+    function particleEffect(x, y, color, count = 8) {
+      for (let i = 0; i < count; i++) {
+        const p = document.createElement('div');
+        p.className = 'particles';
+        p.style.width = p.style.height = `${4 + Math.random() * 6}px`;
+        p.style.background = color;
+        p.style.left = `${x}px`;
+        p.style.bottom = `${y}px`; // Changed to bottom for consistency
+        stage.appendChild(p);
+        let vx = (Math.random() - 0.5) * 5;
+        let vy = - (Math.random() * 5 + 2);
+        let life = 40 + Math.random() * 20;
+        function move() {
+          p.style.left = `${parseFloat(p.style.left) + vx}px`;
+          p.style.bottom = `${parseFloat(p.style.bottom) + vy}px`;
+          vy += 0.3;
+          life--;
+          p.style.opacity = life / 40;
+          if (life <= 0) {
+            stage.removeChild(p);
+          } else {
+            requestAnimationFrame(move);
+          }
+        }
+        move();
+      }
+    }
+
+    function flashScreen(color = '#ef4444') {
+      stage.style.background = `linear-gradient(180deg, ${color}30, #0f1724)`;
+      setTimeout(updateBackground, 200);
+    }
+
+    function updateBackground() {
+      const bgVar = `--level-bg-${Math.min(state.level, 4)}`;
+      stage.style.background = `var(${bgVar})`;
+    }
+
+    function levelUp() {
+      state.level++;
+      levelEl.textContent = `Уровень: ${state.level}`;
+      updateBackground();
+      particleEffect(state.w / 2, state.h / 2, var(--accent), 20);
+      showAchievement(`Уровень ${state.level} достигнут!`);
+      // Add more platforms or change layout
+      if (state.level % 2 === 0) {
+        makePlatform(Math.random() * (state.w - 200) + 100, 180 + Math.random() * 100, 120 + Math.random() * 80);
+      }
+    }
+
+    function checkCollision(aX, aY, aW, aH, bX, bY, bW, bH) {
+      return aX < bX + bW && aX + aW > bX && aY < bY + bH && aY + aH > bY;
+    }
+
+    function handlePlatformCollision() {
+      for (const p of state.platforms) {
+        const playerBottom = 90 + state.py;
+        const playerTop = playerBottom + 76;
+        const playerLeft = state.px + 10;
+        const playerRight = playerLeft + 36;
+        const platTop = p.y + 12;
+        if (
+          state.vy > 0 &&
+          playerLeft < p.x + p.w &&
+          playerRight > p.x &&
+          playerTop > p.y &&
+          playerBottom < platTop
+        ) {
+          state.py = p.y - 76;
+          state.vy = 0;
+          state.onGround = true;
+          break;
+        }
+      }
+    }
+
+    function checkAchievements() {
+      if (state.jumpCount >= 50 && !state.achievements.jumpMaster) {
+        state.achievements.jumpMaster = true;
+        showAchievement('Мастер прыжков: 50 прыжков!');
+        state.score += 20;
+      }
+      if (state.bonusCount >= 20 && !state.achievements.bonusHunter) {
+        state.achievements.bonusHunter = true;
+        showAchievement('Охотник за бонусами: 20 бонусов!');
+        state.score += 30;
+      }
+      // Add more achievements
+      if (state.score >= 100 && !state.achievements.centurion) {
+        state.achievements.centurion = true;
+        showAchievement('Центурион: 100 очков!');
+        state.lives += 1;
+        livesEl.textContent = `Жизни: ${state.lives}`;
+      }
+      localStorage.setItem('wednesdayAchievements', JSON.stringify(state.achievements));
+    }
+
+    function showAchievement(text) {
+      const popup = document.createElement('div');
+      popup.className = 'achievement-popup';
+      popup.textContent = text;
+      stage.appendChild(popup);
+      setTimeout(() => {
+        if (popup.parentNode) stage.removeChild(popup);
+      }, 2000);
+    }
+
+    function tick(currentTime) {
+      const delta = (currentTime - lastTime) / 16.67; // Normalize to 60fps
+      lastTime = currentTime;
+
+      // Input handling
+      if (keys.left) state.vx = Math.max(state.vx - 0.6 * delta, -7 - state.level);
+      else if (keys.right) state.vx = Math.min(state.vx + 0.6 * delta, 7 + state.level);
+      else state.vx *= 0.92 ** delta; // Smoother friction
+
+      if (keys.jump && state.onGround) {
+        state.vy = -12 - (state.level * 0.3);
+        state.onGround = false;
+        keys.jump = false;
+        state.jumpCount++;
+        checkAchievements();
+      }
+
+      // Physics
+      state.vy += 0.6 * delta;
+      state.px += state.vx * delta;
+      state.py += state.vy * delta;
+
+      // Ground collision
+      if (state.py <= 0) {
+        state.py = 0;
+        state.vy = 0;
+        state.onGround = true;
+      }
+
+      // Boundaries
+      state.px = Math.max(8, Math.min(state.px, state.w - 64));
+
+      // Update player position using transform for better perf
+      playerEl.style.transform = `translate(${state.px}px, -${state.py}px)`;
+      playerSkin.style.transform = state.onGround ? `scaleX(${state.vx < 0 ? -1 : 1})` : 'translateY(-6px) scale(1.05)';
+
+      // Enemies
+      for (let i = state.enemies.length - 1; i >= 0; i--) {
+        const e = state.enemies[i];
+        e.x += e.vx * delta * (1 + state.score / 200);
+        e.el.style.left = `${Math.round(e.x)}px`;
+        if (e.isFlying) {
+          e.el.style.bottom = `${parseFloat(e.el.style.bottom) + Math.sin(currentTime / 200) * 0.5}px`;
+        }
+        const px = state.px + 10, py = 90 + state.py + 10, ex = e.x, ey = e.isFlying ? parseFloat(e.el.style.bottom) : 90;
+        if (checkCollision(px, py, 36, 66, ex, ey, 46, 46)) {
+          if (!state.invincible) {
+            state.lives -= 1;
+            livesEl.textContent = `Жизни: ${state.lives}`;
+            flashScreen();
+            if (state.lives <= 0) {
+              gameOver();
+              return;
+            }
+          }
+          particleEffect(ex + 23, ey + 23, var(--danger));
+          stage.removeChild(e.el);
+          state.enemies.splice(i, 1);
+        } else if (e.x < -80) {
+          stage.removeChild(e.el);
+          state.enemies.splice(i, 1);
+          state.score += 1 * state.scoreMultiplier;
+          scoreEl.textContent = `Счёт: ${state.score}`;
+          if (state.score >= state.level * 50) levelUp();
+          updateBackground();
+        }
+      }
+
+      // Bonuses
+      for (let i = state.bonuses.length - 1; i >= 0; i--) {
+        const b = state.bonuses[i];
+        const px = state.px + 10, py = 90 + state.py + 10;
+        if (checkCollision(px, py, 36, 66, b.x, b.y, 36, 36)) {
+          state.score += 5 * state.scoreMultiplier;
+          scoreEl.textContent = `Счёт: ${state.score}`;
+          particleEffect(b.x + 18, b.y + 18, var(--safe), 12);
+          stage.removeChild(b.el);
+          state.bonuses.splice(i, 1);
+          state.bonusCount++;
+          checkAchievements();
+          updateBackground();
+        }
+      }
+
+      // Powerups
+      for (let i = state.powerups.length - 1; i >= 0; i--) {
+        const p = state.powerups[i];
+        const px = state.px + 10, py = 90 + state.py + 10;
+        if (checkCollision(px, py, 36, 66, p.x, p.y, 36, 36)) {
+          if (p.type === 'invincible') {
+            state.invincible = true;
+            state.invincibleTimer = 300; // ~5 seconds at 60fps
+            playerEl.style.boxShadow = '0 0 20px var(--powerup)';
+          } else if (p.type === 'extraLife') {
+            state.lives += 1;
+            livesEl.textContent = `Жизни: ${state.lives}`;
+            flashScreen(var(--safe));
+          }
+          particleEffect(p.x + 18, p.y + 18, var(--powerup), 15);
+          stage.removeChild(p.el);
+          state.powerups.splice(i, 1);
+        }
+      }
+
+      // Invincibility timer
+      if (state.invincible) {
+        state.invincibleTimer -= delta;
+        if (state.invincibleTimer <= 0) {
+          state.invincible = false;
+          playerEl.style.boxShadow = 'none';
+        }
+      }
+
+      // Spawning
+      spawnTimer -= delta;
+      bonusTimer -= delta;
+      powerupTimer -= delta;
+      if (spawnTimer <= 0) {
+        spawnEnemy();
+        spawnTimer = 80 + Math.floor(Math.random() * 120) - (state.level * 10);
+      }
+      if (bonusTimer <= 0) {
+        spawnBonus();
+        bonusTimer = 600 + Math.floor(Math.random() * 400) - (state.level * 50);
+      }
+      if (powerupTimer <= 0 && state.level >= 2) {
+        spawnPowerup();
+        powerupTimer = 1200 + Math.floor(Math.random() * 800) - (state.level * 100);
+      }
+
+      // Platform collision
+      handlePlatformCollision();
+
+      requestAnimationFrame(tick);
+    }
+
+    function gameOver() {
+      if (state.score > state.high) {
+        localStorage.setItem('wednesdayHigh', state.score);
+        state.high = state.score;
+      }
+      unlockSkins();
+      const overlay = document.createElement('div');
+      overlay.className = 'overlay';
+      let achList = '<h3>Достижения:</h3><ul>';
+      for (const [key, val] of Object.entries(state.achievements)) {
+        if (val) achList += `<li>${key === 'jumpMaster' ? 'Мастер прыжков' : key === 'bonusHunter' ? 'Охотник за бонусами' : key === 'centurion' ? 'Центурион' : ''}</li>`;
+      }
+      achList += '</ul>';
+      overlay.innerHTML = `<h2>Игра окончена</h2><p>Счёт: ${state.score}</p><p>Рекорд: ${state.high}</p>${achList}<button id='restart'>Заново</button>`;
+      stage.appendChild(overlay);
+      document.getElementById('restart').addEventListener('click', () => location.reload());
+      if (tg && tg.MainButton) {
+        try {
+          tg.MainButton.setText('Заново');
+          tg.MainButton.show();
+          tg.MainButton.onClick(() => location.reload());
+        } catch (e) {}
+      }
+    }
+
+    function unlockSkins() {
+      document.querySelectorAll('.skin-option.locked').forEach(opt => {
+        const need = parseInt(opt.dataset.unlock);
+        if (state.high >= need) {
+          opt.classList.remove('locked');
+          opt.removeAttribute('data-unlock');
+        }
+      });
+    }
 
     requestAnimationFrame(tick);
-    stage.addEventListener('click',()=>{if(state.onGround){state.vy=-12;state.onGround=false;}});
-    document.body.addEventListener('touchmove',e=>{e.preventDefault();},{passive:false});
+    document.body.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
 
-    const selector=document.getElementById('skin-selector');
-    selector.addEventListener('click',e=>{
-      const opt=e.target.closest('.skin-option');
-      if(opt&&!opt.classList.contains('locked')){
-        document.querySelectorAll('.skin-option').forEach(el=>el.classList.remove('selected'));
+    const selector = document.getElementById('skin-selector');
+    selector.addEventListener('click', e => {
+      const opt = e.target.closest('.skin-option');
+      if (opt && !opt.classList.contains('locked')) {
+        document.querySelectorAll('.skin-option').forEach(el => el.classList.remove('selected'));
         opt.classList.add('selected');
-        playerSkin.src=opt.dataset.skin;
-        localStorage.setItem('wednesdaySkin',opt.dataset.skin);
+        playerSkin.src = opt.dataset.skin;
+        localStorage.setItem('wednesdaySkin', opt.dataset.skin);
       }
     });
 
-    const savedSkin=localStorage.getItem('wednesdaySkin');
-    if(savedSkin){playerSkin.src=savedSkin;document.querySelectorAll('.skin-option').forEach(el=>{if(el.dataset.skin===savedSkin)el.classList.add('selected');});}
+    const savedSkin = localStorage.getItem('wednesdaySkin');
+    if (savedSkin) {
+      playerSkin.src = savedSkin;
+      document.querySelectorAll('.skin-option').forEach(el => {
+        if (el.dataset.skin === savedSkin) el.classList.add('selected');
+      });
+    }
     unlockSkins();
   </script>
 </body>
