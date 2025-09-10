@@ -71,7 +71,7 @@
     .player {
       position: absolute;
       bottom: 90px;
-      left: 100px;
+      left: 0;
       width: 56px;
       height: 86px;
       border-radius: 8px;
@@ -250,9 +250,10 @@
     }
     @media (max-width: 640px) {
       .stage { height: 68vh; }
-      .player { left: 60px; width: 46px; height: 70px; }
+      .player { width: 46px; height: 70px; }
       .controls { gap: 4px; }
       .btn { padding: 10px 14px; font-size: 14px; }
+      .skin-option { width: 36px; height: 56px; }
     }
   </style>
 </head>
@@ -274,8 +275,6 @@
       <div class="skin-option selected" data-skin="https://i.ibb.co/vJnkk3Q/wednesday.png"><img src="https://i.ibb.co/vJnkk3Q/wednesday.png"/></div>
       <div class="skin-option locked" data-unlock="50 очков" data-skin="https://i.ibb.co/dfm1jGn/addams.png"><img src="https://i.ibb.co/dfm1jGn/addams.png"/></div>
       <div class="skin-option locked" data-unlock="120 очков" data-skin="https://i.ibb.co/mCk2pHk/mystery.png"><img src="https://i.ibb.co/mCk2pHk/mystery.png"/></div>
-      <div class="skin-option locked" data-unlock="200 очков" data-skin="https://example.com/new-skin1.png"><img src="https://example.com/new-skin1.png"/></div> <!-- Add more skins -->
-      <div class="skin-option locked" data-unlock="300 очков" data-skin="https://example.com/new-skin2.png"><img src="https://example.com/new-skin2.png"/></div>
     </div>
     <div class="footer">&copy; 2025 Tegcompany. Все права защищены.</div>
   </div>
@@ -299,7 +298,7 @@
     const state = {
       w: stage.clientWidth,
       h: stage.clientHeight,
-      px: 100,
+      px: 0,
       py: 0,
       vx: 0,
       vy: 0,
@@ -323,7 +322,9 @@
     function refreshSize() {
       state.w = stage.clientWidth;
       state.h = stage.clientHeight;
+      state.px = state.w <= 640 ? 60 : 100;
     }
+    refreshSize();
     window.addEventListener('resize', refreshSize);
 
     function makePlatform(x, y, w) {
@@ -401,7 +402,7 @@
     rightBtn.addEventListener('touchend', () => keys.right = false, { passive: true });
     jumpBtn.addEventListener('touchstart', () => {
       if (state.onGround) {
-        state.vy = -12 - (state.level * 0.2);
+        state.vy = 12 + (state.level * 0.2);
         state.onGround = false;
         state.jumpCount++;
         checkAchievements();
@@ -422,7 +423,7 @@
         keys.right = deltaX > 0;
       }
       if (deltaY < -20 && state.onGround) {
-        state.vy = -12 - (state.level * 0.2);
+        state.vy = 12 + (state.level * 0.2);
         state.onGround = false;
         state.jumpCount++;
         checkAchievements();
@@ -443,12 +444,12 @@
         p.style.bottom = `${y}px`; // Changed to bottom for consistency
         stage.appendChild(p);
         let vx = (Math.random() - 0.5) * 5;
-        let vy = - (Math.random() * 5 + 2);
+        let vy = (Math.random() * 5 + 2); // positive for up
         let life = 40 + Math.random() * 20;
         function move() {
           p.style.left = `${parseFloat(p.style.left) + vx}px`;
           p.style.bottom = `${parseFloat(p.style.bottom) + vy}px`;
-          vy += 0.3;
+          vy -= 0.3; // gravity down
           life--;
           p.style.opacity = life / 40;
           if (life <= 0) {
@@ -475,7 +476,7 @@
       state.level++;
       levelEl.textContent = `Уровень: ${state.level}`;
       updateBackground();
-      particleEffect(state.w / 2, state.h / 2, var(--accent), 20);
+      particleEffect(state.w / 2, 200, var(--accent), 20);
       showAchievement(`Уровень ${state.level} достигнут!`);
       // Add more platforms or change layout
       if (state.level % 2 === 0) {
@@ -488,6 +489,7 @@
     }
 
     function handlePlatformCollision() {
+      state.onGround = state.py <= 0; // Reset onGround if not on platform
       for (const p of state.platforms) {
         const playerBottom = 90 + state.py;
         const playerTop = playerBottom + 76;
@@ -495,13 +497,13 @@
         const playerRight = playerLeft + 36;
         const platTop = p.y + 12;
         if (
-          state.vy > 0 &&
+          state.vy < 0 && // falling
           playerLeft < p.x + p.w &&
           playerRight > p.x &&
           playerTop > p.y &&
           playerBottom < platTop
         ) {
-          state.py = p.y - 76;
+          state.py = platTop - 90;
           state.vy = 0;
           state.onGround = true;
           break;
@@ -520,7 +522,6 @@
         showAchievement('Охотник за бонусами: 20 бонусов!');
         state.score += 30;
       }
-      // Add more achievements
       if (state.score >= 100 && !state.achievements.centurion) {
         state.achievements.centurion = true;
         showAchievement('Центурион: 100 очков!');
@@ -550,7 +551,7 @@
       else state.vx *= 0.92 ** delta; // Smoother friction
 
       if (keys.jump && state.onGround) {
-        state.vy = -12 - (state.level * 0.3);
+        state.vy = 12 + (state.level * 0.3);
         state.onGround = false;
         keys.jump = false;
         state.jumpCount++;
@@ -558,7 +559,7 @@
       }
 
       // Physics
-      state.vy += 0.6 * delta;
+      state.vy -= 0.6 * delta; // gravity down
       state.px += state.vx * delta;
       state.py += state.vy * delta;
 
@@ -585,7 +586,7 @@
           e.el.style.bottom = `${parseFloat(e.el.style.bottom) + Math.sin(currentTime / 200) * 0.5}px`;
         }
         const px = state.px + 10, py = 90 + state.py + 10, ex = e.x, ey = e.isFlying ? parseFloat(e.el.style.bottom) : 90;
-        if (checkCollision(px, py, 36, 66, ex, ey, 46, 46)) {
+        if (checkCollision(px, py, 36, 76, ex, ey, 46, 46)) {
           if (!state.invincible) {
             state.lives -= 1;
             livesEl.textContent = `Жизни: ${state.lives}`;
@@ -612,7 +613,7 @@
       for (let i = state.bonuses.length - 1; i >= 0; i--) {
         const b = state.bonuses[i];
         const px = state.px + 10, py = 90 + state.py + 10;
-        if (checkCollision(px, py, 36, 66, b.x, b.y, 36, 36)) {
+        if (checkCollision(px, py, 36, 76, b.x, b.y, 36, 36)) {
           state.score += 5 * state.scoreMultiplier;
           scoreEl.textContent = `Счёт: ${state.score}`;
           particleEffect(b.x + 18, b.y + 18, var(--safe), 12);
@@ -628,7 +629,7 @@
       for (let i = state.powerups.length - 1; i >= 0; i--) {
         const p = state.powerups[i];
         const px = state.px + 10, py = 90 + state.py + 10;
-        if (checkCollision(px, py, 36, 66, p.x, p.y, 36, 36)) {
+        if (checkCollision(px, py, 36, 76, p.x, p.y, 36, 36)) {
           if (p.type === 'invincible') {
             state.invincible = true;
             state.invincibleTimer = 300; // ~5 seconds at 60fps
