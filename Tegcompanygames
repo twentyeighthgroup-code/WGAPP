@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Wednesday Mega Update Game</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root{
+      --bg:#0b0f14;--floor:#111517;--accent:#8b5cf6;--accent2:#f97316;--text:#f3f4f6;--danger:#ef4444;--safe:#22c55e
+    }
+    html,body{height:100%;margin:0;font-family:Inter, system-ui, sans-serif;background:var(--bg);color:var(--text);-webkit-user-select:none;overflow:hidden}
+    #game{display:flex;flex-direction:column;height:100vh;align-items:center;justify-content:center}
+    .stage{position:relative;width:100%;max-width:920px;height:520px;background:linear-gradient(180deg,#0b0f14 0%,#0f1724 70%);border-radius:14px;box-shadow:0 6px 30px rgba(2,6,23,.6);overflow:hidden;transition:background 1s}
+    .floor{position:absolute;left:0;right:0;bottom:0;height:90px;background:linear-gradient(180deg,var(--floor),#0b0f1a)}
+    .score,.hud{position:absolute;top:14px;padding:6px 10px;background:rgba(255,255,255,.04);border-radius:8px;font-size:16px}
+    .score{left:14px}
+    .hud{right:14px}
+    .player{position:absolute;bottom:90px;left:100px;width:56px;height:86px;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center}
+    .player img{width:100%;height:100%;object-fit:cover;transition:transform 0.2s}
+    .enemy{position:absolute;bottom:90px;width:46px;height:46px;background:var(--danger);border-radius:6px;box-shadow:0 6px 18px rgba(239,68,68,.15)}
+    .bonus{position:absolute;width:36px;height:36px;border-radius:50%;background:var(--safe);bottom:120px;box-shadow:0 4px 12px rgba(34,197,94,.3)}
+    .platform{position:absolute;height:12px;background:linear-gradient(90deg,#0f1724,#111827);border-radius:6px}
+    .controls{display:flex;gap:8px;margin-top:14px}
+    .btn{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.03);padding:12px 16px;border-radius:8px;font-size:15px;color:var(--text)}
+    .footer{margin-top:12px;color:rgba(255,255,255,.5);font-size:13px;text-align:center;max-width:90%}
+    .overlay{position:absolute;inset:0;background:rgba(0,0,0,.7);display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text);z-index:50}
+    .overlay button{margin-top:14px;padding:10px 16px;border-radius:8px;background:var(--accent);border:none;color:#fff;font-size:16px;cursor:pointer}
+    .skin-selector{margin-top:10px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+    .skin-option{width:46px;height:70px;border:2px solid transparent;border-radius:6px;overflow:hidden;cursor:pointer;opacity:1;position:relative}
+    .skin-option.locked{opacity:0.3;cursor:not-allowed}
+    .skin-option.locked::after{content:attr(data-unlock);position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;background:rgba(0,0,0,.6)}
+    .skin-option.selected{border-color:var(--accent)}
+    .skin-option img{width:100%;height:100%;object-fit:cover}
+    .particles{position:absolute;pointer-events:none;border-radius:50%}
+    @media (max-width:640px){.stage{height:68vh} .player{left:60px;width:46px;height:70px}}
+  </style>
+</head>
+<body>
+  <div id="game">
+    <div class="stage" id="stage">
+      <div class="score" id="score">Счёт: 0</div>
+      <div class="hud" id="lives">Жизни: 3</div>
+      <div class="floor"></div>
+      <div class="player" id="player"><img id="player-skin" src="https://i.ibb.co/vJnkk3Q/wednesday.png" alt="skin"/></div>
+    </div>
+    <div class="controls" id="controls">
+      <button class="btn" id="left">◀</button>
+      <button class="btn" id="jump">▲ Прыжок</button>
+      <button class="btn" id="right">▶</button>
+    </div>
+    <div class="skin-selector" id="skin-selector">
+      <div class="skin-option selected" data-skin="https://i.ibb.co/vJnkk3Q/wednesday.png"><img src="https://i.ibb.co/vJnkk3Q/wednesday.png"/></div>
+      <div class="skin-option locked" data-unlock="50 очков" data-skin="https://i.ibb.co/dfm1jGn/addams.png"><img src="https://i.ibb.co/dfm1jGn/addams.png"/></div>
+      <div class="skin-option locked" data-unlock="120 очков" data-skin="https://i.ibb.co/mCk2pHk/mystery.png"><img src="https://i.ibb.co/mCk2pHk/mystery.png"/></div>
+    </div>
+    <div class="footer">Mega Update: уровни, награды, эффекты и достижения 🎉</div>
+  </div>
+
+  <script>
+    const tg = window.Telegram.WebApp || null;
+    if (tg){try{tg.expand();}catch(e){}}
+
+    const stage=document.getElementById('stage');
+    const playerEl=document.getElementById('player');
+    const playerSkin=document.getElementById('player-skin');
+    const scoreEl=document.getElementById('score');
+    const livesEl=document.getElementById('lives');
+
+    const state={w:stage.clientWidth,h:stage.clientHeight,px:100,py:0,vx:0,vy:0,onGround:true,score:0,lives:3,enemies:[],bonuses:[],platforms:[],high:localStorage.getItem('wednesdayHigh')||0};
+
+    function refreshSize(){state.w=stage.clientWidth;state.h=stage.clientHeight;}
+    window.addEventListener('resize',refreshSize);
+
+    function makePlatform(x,y,w){const el=document.createElement('div');el.className='platform';el.style.left=x+'px';el.style.bottom=y+'px';el.style.width=w+'px';stage.appendChild(el);state.platforms.push({x,y,w,el});}
+    makePlatform(320,160,160);makePlatform(520,240,120);makePlatform(760,200,140);
+
+    function spawnEnemy(){const el=document.createElement('div');el.className='enemy';const x=state.w+40;el.style.left=x+'px';el.style.bottom=90+'px';stage.appendChild(el);state.enemies.push({x,vx:-2.2,el});}
+    function spawnBonus(){const el=document.createElement('div');el.className='bonus';const x=Math.random()*(state.w-60)+40;const y=120+Math.random()*200;el.style.left=x+'px';el.style.bottom=y+'px';stage.appendChild(el);state.bonuses.push({x,y,el});}
+
+    let spawnTimer=0,bonusTimer=500;
+
+    let keys={left:false,right:false,jump:false};
+    document.addEventListener('keydown',e=>{if(e.key==='ArrowLeft')keys.left=true;if(e.key==='ArrowRight')keys.right=true;if(e.key===' '||e.key==='ArrowUp')keys.jump=true;});
+    document.addEventListener('keyup',e=>{if(e.key==='ArrowLeft')keys.left=false;if(e.key==='ArrowRight')keys.right=false;if(e.key===' '||e.key==='ArrowUp')keys.jump=false;});
+    document.getElementById('left').addEventListener('touchstart',()=>keys.left=true);
+    document.getElementById('left').addEventListener('touchend',()=>keys.left=false);
+    document.getElementById('right').addEventListener('touchstart',()=>keys.right=true);
+    document.getElementById('right').addEventListener('touchend',()=>keys.right=false);
+    document.getElementById('jump').addEventListener('touchstart',()=>{if(state.onGround){state.vy=-12;state.onGround=false;}});
+
+    function particleEffect(x,y,color){for(let i=0;i<6;i++){const p=document.createElement('div');p.className='particles';p.style.width=p.style.height=(4+Math.random()*6)+'px';p.style.background=color;p.style.left=x+'px';p.style.top=y+'px';stage.appendChild(p);let vx=(Math.random()-0.5)*4,vy=(Math.random()-1)*4;let life=30;function move(){p.style.left=(parseFloat(p.style.left)+vx)+'px';p.style.top=(parseFloat(p.style.top)+vy)+'px';vy+=0.2;life--;if(life<=0){stage.removeChild(p);}else requestAnimationFrame(move);}move();}}
+
+    function flashScreen(){stage.style.background='linear-gradient(180deg,#3f0b0b,#0f1724)';setTimeout(()=>updateBackground(),200);}
+
+    function updateBackground(){if(state.score>100){stage.style.background='linear-gradient(180deg,#1c1c3c,#3c1c3c)';}else if(state.score>50){stage.style.background='linear-gradient(180deg,#0b0f1a,#162035)';}else{stage.style.background='linear-gradient(180deg,#0b0f14,#0f1724)';}}
+
+    function tick(){
+      if(keys.left)state.vx=Math.max(state.vx-0.5,-6);else if(keys.right)state.vx=Math.min(state.vx+0.5,6);else state.vx*=0.85;
+      if(keys.jump&&state.onGround){state.vy=-12;state.onGround=false;keys.jump=false;}
+      state.vy+=0.6;state.px+=state.vx;state.py+=state.vy;
+      if(state.py<=0){state.py=0;state.vy=0;state.onGround=true;}
+      state.px=Math.max(8,Math.min(state.px,state.w-64));
+      playerEl.style.left=Math.round(state.px)+'px';playerEl.style.bottom=(90+state.py)+'px';
+      playerSkin.style.transform=state.onGround?`scaleX(${state.vx<0?-1:1})`:'translateY(-6px)';
+
+      for(let i=state.enemies.length-1;i>=0;i--){const e=state.enemies[i];e.x+=e.vx*(1+state.score/200);e.el.style.left=Math.round(e.x)+'px';const px=state.px+10,py=90+state.py+10;const ex=e.x,ey=90;if(px<ex+46&&px+36>ex&&py<ey+46&&py+76>ey){state.lives-=1;livesEl.textContent='Жизни: '+state.lives;flashScreen();stage.removeChild(e.el);state.enemies.splice(i,1);if(state.lives<=0){gameOver();return;}}if(e.x<-80){stage.removeChild(e.el);state.enemies.splice(i,1);state.score+=1;scoreEl.textContent='Счёт: '+state.score;updateBackground();}}
+
+      for(let i=state.bonuses.length-1;i>=0;i--){const b=state.bonuses[i];const px=state.px+10,py=90+state.py+10;if(px<b.x+36&&px+36>b.x&&py<b.y+36&&py+76>b.y){state.score+=5;scoreEl.textContent='Счёт: '+state.score;particleEffect(b.x,b.y,'#22c55e');stage.removeChild(b.el);state.bonuses.splice(i,1);updateBackground();}}
+
+      spawnTimer-=1;bonusTimer-=1;if(spawnTimer<=0){spawnEnemy();spawnTimer=80+Math.floor(Math.random()*120);}if(bonusTimer<=0){spawnBonus();bonusTimer=600+Math.floor(Math.random()*400);}requestAnimationFrame(tick);
+    }
+
+    function gameOver(){if(state.score>state.high){localStorage.setItem('wednesdayHigh',state.score);state.high=state.score;}unlockSkins();const overlay=document.createElement('div');overlay.className='overlay';overlay.innerHTML=`<h2>Игра окончена</h2><p>Счёт: ${state.score}</p><p>Рекорд: ${state.high}</p><button id='restart'>Заново</button>`;stage.appendChild(overlay);document.getElementById('restart').addEventListener('click',()=>location.reload());if(tg&&tg.MainButton){try{tg.MainButton.setText('Заново');tg.MainButton.show();tg.MainButton.onClick(()=>location.reload());}catch(e){}}}
+
+    function unlockSkins(){document.querySelectorAll('.skin-option.locked').forEach(opt=>{const need=parseInt(opt.dataset.unlock);if(state.high>=need){opt.classList.remove('locked');opt.removeAttribute('data-unlock');}});}
+
+    requestAnimationFrame(tick);
+    stage.addEventListener('click',()=>{if(state.onGround){state.vy=-12;state.onGround=false;}});
+    document.body.addEventListener('touchmove',e=>{e.preventDefault();},{passive:false});
+
+    const selector=document.getElementById('skin-selector');
+    selector.addEventListener('click',e=>{
+      const opt=e.target.closest('.skin-option');
+      if(opt&&!opt.classList.contains('locked')){
+        document.querySelectorAll('.skin-option').forEach(el=>el.classList.remove('selected'));
+        opt.classList.add('selected');
+        playerSkin.src=opt.dataset.skin;
+        localStorage.setItem('wednesdaySkin',opt.dataset.skin);
+      }
+    });
+
+    const savedSkin=localStorage.getItem('wednesdaySkin');
+    if(savedSkin){playerSkin.src=savedSkin;document.querySelectorAll('.skin-option').forEach(el=>{if(el.dataset.skin===savedSkin)el.classList.add('selected');});}
+    unlockSkins();
+  </script>
+</body>
+</html>
