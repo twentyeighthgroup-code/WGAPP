@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tegych AI Chat | Claude Sonnet via OpenRouter</title>
+    <title>Tegych AI Chat | Claude 3.5 Sonnet via OpenRouter</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
@@ -1105,27 +1105,30 @@
         Notification
     </div>
     <script>
-        // Telegram Web App
         Telegram.WebApp.ready();
         Telegram.WebApp.expand();
 
-        // 🔑 OpenRouter Configuration
+        // 🔑 ЗАМЕНИТЕ ЭТОТ КЛЮЧ НА РЕАЛЬНЫЙ ИЗ: https://openrouter.ai/settings/keys
         const OPENROUTER_API_KEY = "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";
-        const MODEL = "anthropic/claude-sonnet-4.5";
+
+        // ✅ Используем существующую модель
+        const MODEL = "anthropic/claude-3.5-sonnet";
         const API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
         const EMOJI_LIST = ["😊", "😄", "🤩", "🥳", "😎", "🤔", "🤗", "🤖", "🎨", "🎶", "🎬", "✨", "🎉", "🔥", "🌟"];
+
+        // ❗ Anthropic не поддерживает system — только user + assistant
         let chatHistory = [
-            { role: "system", content: "You are Tegych, a helpful assistant. You are an expert in science, art, music, movies, and entertainment. Answer in English, friendly and creative." }
+            { role: "user", content: "You are Tegych, a helpful assistant. You are an expert in science, art, music, movies, and entertainment. Answer in English, friendly and creative." },
+            { role: "assistant", content: "Understood! How can I help you today?" }
         ];
+
         const questionCache = new Map();
         const chatContainer = document.getElementById('chat-container');
         const userInput = document.getElementById('user-input');
         const sendBtn = document.getElementById('send-btn');
         const notificationEl = document.getElementById('notification');
-        const chatHistoryEl = document.getElementById('chat-history');
         const emojiPicker = document.getElementById('emoji-picker');
-        const languageSelect = document.getElementById('language-select');
         let currentLanguage = 'en';
 
         function showNotification(message, type = 'success') {
@@ -1145,7 +1148,8 @@
         function clearChat() {
             chatContainer.innerHTML = '';
             chatHistory = [
-                { role: "system", content: "You are Tegych, a helpful assistant. You are an expert in science, art, music, movies, and entertainment. Answer in English, friendly and creative." }
+                { role: "user", content: "You are Tegych, a helpful assistant. You are an expert in science, art, music, movies, and entertainment. Answer in English, friendly and creative." },
+                { role: "assistant", content: "Understood! How can I help you today?" }
             ];
             addWelcomeMessage();
             showNotification('Chat cleared', 'success');
@@ -1204,7 +1208,8 @@
         }
 
         function toggleHistory() {
-            chatHistoryEl.style.display = chatHistoryEl.style.display === 'block' ? 'none' : 'block';
+            const el = document.getElementById('chat-history');
+            el.style.display = el.style.display === 'block' ? 'none' : 'block';
         }
 
         function changeTheme(theme) {
@@ -1219,26 +1224,23 @@
 
         function changeLanguage(lang) {
             currentLanguage = lang;
-            languageSelect.value = lang;
             if (lang === 'ru') {
-                chatHistory[0] = { 
-                    role: "system", 
-                    content: "Вы Tegych, полезный ассистент. Вы эксперт в науке, искусстве, музыке, кино и развлечениях. Отвечайте на русском языке, дружелюбно и креативно." 
-                };
+                chatHistory = [
+                    { role: "user", content: "Вы Tegych, полезный ассистент. Вы эксперт в науке, искусстве, музыке, кино и развлечениях. Отвечайте на русском языке, дружелюбно и креативно." },
+                    { role: "assistant", content: "Понял! Как я могу помочь вам сегодня?" }
+                ];
                 showNotification('Язык изменен на Русский', 'info');
             } else {
-                chatHistory[0] = { 
-                    role: "system", 
-                    content: "You are Tegych, a helpful assistant. You are an expert in science, art, music, movies, and entertainment. Answer in English, friendly and creative." 
-                };
+                chatHistory = [
+                    { role: "user", content: "You are Tegych, a helpful assistant..." },
+                    { role: "assistant", content: "Understood! How can I help you today?" }
+                ];
                 showNotification('Language changed to English', 'info');
             }
             updateInterfaceLanguage();
         }
 
-        function updateInterfaceLanguage() {
-            // Для простоты опущено — можно добавить data-атрибуты при необходимости
-        }
+        function updateInterfaceLanguage() {}
 
         function attachFile() {
             const fileInput = document.createElement('input');
@@ -1265,10 +1267,7 @@
                     `;
                     chatContainer.appendChild(messageDiv);
                     chatContainer.scrollTop = chatContainer.scrollHeight;
-                    chatHistory.push({ 
-                        role: "user", 
-                        content: `File attached: ${file.name} (${file.type})` 
-                    });
+                    chatHistory.push({ role: "user", content: `File attached: ${file.name}` });
                     setTimeout(() => {
                         const botMessage = document.createElement('div');
                         botMessage.className = 'message bot-message';
@@ -1285,10 +1284,7 @@
                         `;
                         chatContainer.appendChild(botMessage);
                         chatContainer.scrollTop = chatContainer.scrollHeight;
-                        chatHistory.push({ 
-                            role: "assistant", 
-                            content: `I received your file: ${file.name}. How can I help you with it?` 
-                        });
+                        chatHistory.push({ role: "assistant", content: `I received your file: ${file.name}. How can I help you with it?` });
                     }, 1000);
                 }
             };
@@ -1297,9 +1293,8 @@
             document.body.removeChild(fileInput);
         }
 
-        function removeFile(element) {
-            const filePreview = element.parentElement;
-            filePreview.remove();
+        function removeFile(el) {
+            el.closest('.file-preview').remove();
         }
 
         function toggleEmojiPicker() {
@@ -1329,12 +1324,7 @@
                 const cachedResponse = questionCache.get(input);
                 addMessage(input, 'user');
                 addMessage(cachedResponse, 'bot');
-                showNotification(
-                    currentLanguage === 'ru' ? 
-                    'Ответ из кэша' : 
-                    'Response from cache', 
-                    'info'
-                );
+                showNotification(currentLanguage === 'ru' ? 'Ответ из кэша' : 'Response from cache', 'info');
                 return;
             }
 
@@ -1367,8 +1357,8 @@
 
                 if (!response.ok) {
                     const errorText = await response.text();
-                    console.error('OpenRouter API Error:', response.status, errorText);
-                    throw new Error(`API ${response.status}: ${errorText}`);
+                    console.error('OpenRouter Error:', response.status, errorText);
+                    throw new Error(`API ${response.status}`);
                 }
 
                 hideTypingIndicator();
@@ -1398,13 +1388,13 @@
                                     chatContainer.scrollTop = chatContainer.scrollHeight;
                                 }
                             } catch (e) {
-                                console.warn('Parse error in streamed chunk:', e, line);
+                                console.warn('Parse error in stream:', e, line);
                             }
                         }
                     }
                 }
 
-                if (!aiResponse) {
+                if (!aiResponse.trim()) {
                     aiResponse = currentLanguage === 'ru'
                         ? 'Нет ответа от ИИ. Попробуйте снова.'
                         : 'No response from AI. Try again.';
@@ -1421,14 +1411,15 @@
                 if (input.length < 100) {
                     questionCache.set(input, aiResponse);
                 }
+
             } catch (error) {
                 console.error('OpenRouter API Error:', error);
                 hideTypingIndicator();
                 aiMessageDiv.innerHTML = currentLanguage === 'ru'
-                    ? `Ошибка: ${error.message}. Проверьте ключ или лимиты.`
-                    : `Error: ${error.message}. Check key or limits.`;
+                    ? `Ошибка: ${error.message}. Проверьте ключ и модель.`
+                    : `Error: ${error.message}. Check key and model.`;
                 aiMessageDiv.classList.remove('streaming');
-                showNotification(currentLanguage === 'ru' ? 'Ошибка при отправке' : 'Error sending message', 'error');
+                showNotification(currentLanguage === 'ru' ? 'Ошибка запроса' : 'Request error', 'error');
             } finally {
                 sendBtn.disabled = false;
                 userInput.focus();
@@ -1470,22 +1461,14 @@
         }
 
         function hideTypingIndicator() {
-            const typingIndicator = document.getElementById('typing-indicator');
-            if (typingIndicator) {
-                typingIndicator.remove();
-            }
+            const el = document.getElementById('typing-indicator');
+            if (el) el.remove();
         }
 
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
-        }
-
-        function sendToBot() {
-            const lastMessage = chatHistory[chatHistory.length - 1]?.content || 'Chat ended';
-            Telegram.WebApp.sendData(JSON.stringify({ chat_summary: lastMessage }));
-            Telegram.WebApp.close();
         }
 
         userInput.addEventListener('keypress', (e) => {
