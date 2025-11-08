@@ -2,45 +2,154 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Clicker Game</title>
+    <title>Clicker Adventure</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             text-align: center;
-            background-color: #f0f0f0;
-            padding: 50px;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: white;
+            padding: 20px;
+            margin: 0;
+            min-height: 100vh;
         }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
         #counter {
             font-size: 48px;
             margin: 20px;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
         }
-        button {
-            font-size: 24px;
-            padding: 15px 30px;
-            margin: 10px;
+
+        #clicker {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: #ffcc00;
             border: none;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(255, 204, 0, 0.7);
+            transition: transform 0.1s;
+            margin: 20px auto;
+            display: block;
+        }
+
+        #clicker:active {
+            transform: scale(0.9);
+        }
+
+        .shop-item {
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 10px;
+            margin: 10px;
+            border-radius: 10px;
+            display: inline-block;
+            width: 200px;
+        }
+
+        button {
             background-color: #4CAF50;
             color: white;
+            border: none;
+            padding: 10px;
             cursor: pointer;
+            font-size: 16px;
+            border-radius: 5px;
+            margin-top: 5px;
         }
-        button:hover {
-            background-color: #45a049;
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
         }
     </style>
 </head>
 <body>
 
-    <h1>Кликер</h1>
+    <h1>Clicker Adventure</h1>
     <div id="counter">0</div>
-    <button onclick="clickCounter()">Клик!</button>
+    <button id="clicker" onclick="clickCounter()">💥</button>
+
+    <h2>Магазин</h2>
+    <div class="shop">
+        <div class="shop-item">
+            <p>+1 за клик</p>
+            <p>Цена: <span id="cost1">10</span></p>
+            <button onclick="buyUpgrade(1)">Купить</button>
+        </div>
+        <div class="shop-item">
+            <p>Автокликер: +1 в секунду</p>
+            <p>Цена: <span id="cost2">50</span></p>
+            <button onclick="buyAutoclicker()">Купить</button>
+        </div>
+    </div>
 
     <script>
         let count = 0;
+        let perClick = 1;
+        let autoClick = 0;
 
+        // Загрузка сохранённого прогресса
+        window.onload = function () {
+            const saved = JSON.parse(localStorage.getItem('clickerSave'));
+            if (saved) {
+                count = saved.count || 0;
+                perClick = saved.perClick || 1;
+                autoClick = saved.autoClick || 0;
+                document.getElementById("counter").innerText = count;
+            }
+        };
+
+        // Сохранение прогресса
+        function saveGame() {
+            localStorage.setItem('clickerSave', JSON.stringify({
+                count: count,
+                perClick: perClick,
+                autoClick: autoClick
+            }));
+        }
+
+        // Клик
         function clickCounter() {
-            count++;
+            count += perClick;
             document.getElementById("counter").innerText = count;
         }
+
+        // Покупка улучшения (+1 за клик)
+        function buyUpgrade(type) {
+            const cost = parseInt(document.getElementById("cost1").innerText);
+            if (count >= cost) {
+                count -= cost;
+                perClick += 1;
+                document.getElementById("cost1").innerText = cost * 2;
+                document.getElementById("counter").innerText = count;
+            }
+        }
+
+        // Покупка автокликера
+        function buyAutoclicker() {
+            const cost = parseInt(document.getElementById("cost2").innerText);
+            if (count >= cost) {
+                count -= cost;
+                autoClick += 1;
+                document.getElementById("cost2").innerText = cost * 2;
+                document.getElementById("counter").innerText = count;
+            }
+        }
+
+        // Автокликер
+        setInterval(() => {
+            count += autoClick;
+            document.getElementById("counter").innerText = count;
+        }, 1000);
+
+        // Сохранение каждые 5 секунд
+        setInterval(saveGame, 5000);
     </script>
 
 </body>
