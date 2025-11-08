@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tegych AI Chat | All Features Working</title>
+    <title>Tegych AI | All Features Working</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
@@ -14,6 +14,9 @@
             --accent-gold: #d4af37;
             --accent-blue: #007bff;
             --accent-purple: #8a2be2;
+            --accent-green: #28a745;
+            --accent-red: #dc3545;
+            --accent-orange: #fd7e14;
             --text-light: #f0f0f0;
             --text-muted: #aaa;
             --border-radius: 16px;
@@ -34,6 +37,9 @@
             --accent-gold: #b8860b;
             --accent-blue: #0056b3;
             --accent-purple: #6a1b9a;
+            --accent-green: #1e7e34;
+            --accent-red: #c82333;
+            --accent-orange: #e07c16;
         }
         [data-theme="dark-blue"] {
             --primary-dark: #0a1929;
@@ -44,6 +50,9 @@
             --accent-gold: #ffd54f;
             --accent-blue: #4fc3f7;
             --accent-purple: #ba68c8;
+            --accent-green: #81c784;
+            --accent-red: #e57373;
+            --accent-orange: #ffb74d;
         }
         [data-theme="dark-purple"] {
             --primary-dark: #1a0a1a;
@@ -54,6 +63,48 @@
             --accent-gold: #ffd54f;
             --accent-blue: #4fc3f7;
             --accent-purple: #ba68c8;
+            --accent-green: #81c784;
+            --accent-red: #e57373;
+            --accent-orange: #ffb74d;
+        }
+        [data-theme="dark-green"] {
+            --primary-dark: #0a1a0a;
+            --secondary-dark: #1a2a1a;
+            --tertiary-dark: #2a3a2a;
+            --text-light: #e8f5e9;
+            --text-muted: #a5d6a7;
+            --accent-gold: #ffd54f;
+            --accent-blue: #4fc3f7;
+            --accent-purple: #ba68c8;
+            --accent-green: #81c784;
+            --accent-red: #e57373;
+            --accent-orange: #ffb74d;
+        }
+        [data-theme="dark-red"] {
+            --primary-dark: #1a0a0a;
+            --secondary-dark: #2a1a1a;
+            --tertiary-dark: #3a2a2a;
+            --text-light: #ffebee;
+            --text-muted: #f48fb1;
+            --accent-gold: #ffd54f;
+            --accent-blue: #4fc3f7;
+            --accent-purple: #ba68c8;
+            --accent-green: #81c784;
+            --accent-red: #e57373;
+            --accent-orange: #ffb74d;
+        }
+        [data-theme="solarized"] {
+            --primary-dark: #002b36;
+            --secondary-dark: #073642;
+            --tertiary-dark: #586e75;
+            --text-light: #93a1a1;
+            --text-muted: #839496;
+            --accent-gold: #b58900;
+            --accent-blue: #268bd2;
+            --accent-purple: #6c71c4;
+            --accent-green: #859900;
+            --accent-red: #dc322f;
+            --accent-orange: #cb4b16;
         }
         * {
             margin: 0;
@@ -245,6 +296,40 @@
         .message-content {
             font-size: 17px;
             line-height: 1.7;
+        }
+        .message-content p {
+            margin: 0.5em 0;
+        }
+        .message-content ul, .message-content ol {
+            padding-left: 20px;
+            margin: 0.5em 0;
+        }
+        .message-content li {
+            margin: 0.3em 0;
+        }
+        .message-content h1, .message-content h2, .message-content h3, .message-content h4, .message-content h5, .message-content h6 {
+            margin: 0.8em 0 0.4em;
+            font-weight: 600;
+        }
+        .message-content h1 { font-size: 1.6em; }
+        .message-content h2 { font-size: 1.5em; }
+        .message-content h3 { font-size: 1.4em; }
+        .message-content h4 { font-size: 1.3em; }
+        .message-content h5 { font-size: 1.2em; }
+        .message-content h6 { font-size: 1.1em; }
+        .message-content code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        .message-content pre {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 10px;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 0.5em 0;
         }
         .typing-indicator {
             display: flex;
@@ -883,8 +968,8 @@
             <div class="logo-text">Tegych</div>
         </div>
         <div class="user-info">
-            <div class="avatar">U</div>
-            <div class="user-name">User</div>
+            <div class="avatar" id="user-avatar">U</div>
+            <div class="user-name" id="user-name">User</div>
         </div>
     </div>
     <div class="update-banner">
@@ -1011,6 +1096,9 @@
                 <option value="light">Light Theme</option>
                 <option value="dark-blue">Dark Blue</option>
                 <option value="dark-purple">Dark Purple</option>
+                <option value="dark-green">Dark Green</option>
+                <option value="dark-red">Dark Red</option>
+                <option value="solarized">Solarized</option>
             </select>
         </div>
         <div class="language-selector">
@@ -1068,7 +1156,7 @@
         <div class="emoji-item" onclick="insertEmoji('⚠️')">⚠️</div>
     </div>
     <div class="footer">
-        <div>© 2023 Tegych AI Chat. All rights reserved.</div>
+        <div>© 2025 Tegycompany. All rights reserved.</div>
         <div class="footer-links">
             <a href="#" class="footer-link">Privacy Policy</a>
             <a href="#" class="footer-link">Terms of Use</a>
@@ -1111,18 +1199,38 @@
         Telegram.WebApp.expand();  // Полноэкранный режим
         Telegram.WebApp.MainButton.setText('Send to chat').show().onClick(sendToBot);
 
-        // Конфигурация (заменить YOUR_GROQ_API_KEY на твой токен из Groq Cloud)
-        const GROQ_API_KEY = "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";  // ← ЗАМЕНИТЬ НА РЕАЛЬНЫЙ ТОКЕН
-        const MODEL = "llama-3.3-70b-versatile";  // Модель от Groq
+        // Получаем данные пользователя из Telegram
+        const user = Telegram.WebApp.initDataUnsafe?.user;
+        if (user) {
+            const userInitial = (user.first_name.charAt(0) + (user.last_name ? user.last_name.charAt(0) : '')).toUpperCase();
+            document.getElementById('user-avatar').textContent = userInitial;
+            document.getElementById('user-name').textContent = user.first_name + (user.last_name ? ' ' + user.last_name : '');
+        }
+
+        // Конфигурация 
+        const GROQ_API_KEY = "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";  // 
+        const MODEL = "llama-3.3-70b-versatile";  // 
         const API_URL = "https://api.groq.com/openai/v1/chat/completions";
 
         // Список эмодзи (как в оригинале)
         const EMOJI_LIST = ["😊", "😄", "🤩", "🥳", "😎", "🤔", "🤗", "🤖", "🎨", "🎶", "🎬", "✨", "🎉", "🔥", "🌟"];
 
-        // История чата (messages для Groq)
+        // История чата 
         let chatHistory = [
             { role: "system", content: "You are Tegych, a helpful assistant. You are an expert in science, art, music, movies, and entertainment. Answer in English, friendly and creative." }
         ];
+
+        // Загружаем историю из localStorage
+        const savedHistory = localStorage.getItem('chatHistory');
+        if (savedHistory) {
+            try {
+                chatHistory = JSON.parse(savedHistory);
+                // Восстанавливаем чат
+                renderChatFromHistory();
+            } catch (e) {
+                console.error('Error loading chat history:', e);
+            }
+        }
 
         // Кэш для часто задаваемых вопросов
         const questionCache = new Map();
@@ -1161,6 +1269,7 @@
             chatHistory = [
                 { role: "system", content: "You are Tegych, a helpful assistant. You are an expert in science, art, music, movies, and entertainment. Answer in English, friendly and creative." }
             ];
+            localStorage.removeItem('chatHistory');
             addWelcomeMessage();
             showNotification('Chat cleared', 'success');
         }
@@ -1198,6 +1307,15 @@
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
+        // Функция отображения чата из истории
+        function renderChatFromHistory() {
+            chatContainer.innerHTML = '';
+            for (const msg of chatHistory) {
+                if (msg.role === 'system') continue;
+                addMessage(msg.content, msg.role === 'user' ? 'user' : 'bot');
+            }
+        }
+
         // Функция экспорта чата
         function exportChat() {
             const messages = [];
@@ -1227,6 +1345,7 @@
         // Функция смены темы
         function changeTheme(theme) {
             document.body.setAttribute('data-theme', theme);
+            localStorage.setItem('selectedTheme', theme);
             showNotification(
                 currentLanguage === 'ru' ? 
                 `Тема изменена на ${theme}` : 
@@ -1255,6 +1374,8 @@
             }
             // Обновляем интерфейс
             updateInterfaceLanguage();
+            // Перезаписываем историю с новым системным сообщением
+            localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
         }
 
         // Функция обновления интерфейса при смене языка
@@ -1310,6 +1431,7 @@
                         role: "user", 
                         content: `File attached: ${file.name} (${file.type})` 
                     });
+                    localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
                     // Имитируем ответ бота
                     setTimeout(() => {
                         const botMessage = document.createElement('div');
@@ -1332,6 +1454,7 @@
                             role: "assistant", 
                             content: `I received your file: ${file.name}. How can I help you with it?` 
                         });
+                        localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
                     }, 1000);
                 }
             };
@@ -1368,7 +1491,7 @@
             );
         }
 
-        // Функция отправки сообщения (с поддержкой стриминга от Groq)
+        // Функция отправки сообщения 
         async function sendMessage() {
             const input = userInput.value.trim();
             if (!input) return;
@@ -1390,6 +1513,7 @@
             // Добавляем сообщение пользователя
             addMessage(input, 'user');
             chatHistory.push({ role: "user", content: input });
+            localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
             userInput.value = '';
             sendBtn.disabled = true;
 
@@ -1441,7 +1565,7 @@
                     const chunk = decoder.decode(value);
                     const lines = chunk.split('\n');
                     for (const line of lines) {
-                        if (line.startsWith('data: ')) {
+                        if (line.startsWith(' ')) {
                             const data = line.slice(6);
                             if (data === '[DONE]') continue;
                             try {
@@ -1473,6 +1597,7 @@
                 aiMessageDiv.innerHTML = escapeHtml(aiResponse);
                 aiMessageDiv.classList.remove('streaming', 'loading');
                 chatHistory.push({ role: "assistant", content: aiResponse });
+                localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
 
                 // Кэшируем ответ (если вопрос короче 100 символов)
                 if (input.length < 100) {
@@ -1516,7 +1641,7 @@
             content.innerHTML = escapeHtml(text);
             messageDiv.appendChild(header);
             messageDiv.appendChild(content);
-             chatContainer.appendChild(messageDiv);
+            chatContainer.appendChild(messageDiv);
             chatContainer.scrollTop = chatContainer.scrollHeight;
             return messageDiv;
         }
@@ -1544,7 +1669,7 @@
             }
         }
 
-        // Эскейп HTML
+        // Эскейп HTML и форматирование Markdown
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
@@ -1569,6 +1694,12 @@
                 emojiPicker.classList.remove('show');
             }
         });
+
+        // Загрузка темы из localStorage
+        const savedTheme = localStorage.getItem('selectedTheme');
+        if (savedTheme) {
+            changeTheme(savedTheme);
+        }
 
         // Инициализация
         userInput.focus();
