@@ -177,6 +177,9 @@
             position: relative;
             overflow: hidden;
             box-shadow: var(--shadow-glow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .logo-icon::before {
             content: "";
@@ -963,7 +966,8 @@
     <div class="header">
         <div class="logo">
             <div class="logo-icon">
-                <i class="fas fa-robot"></i>
+                <!-- Заменена иконка -->
+                <img src="https://i.imgur.com/Gm1.png" alt="Tegych Logo" style="width: 32px; height: 32px;">
             </div>
             <div class="logo-text">Tegych</div>
         </div>
@@ -1049,7 +1053,8 @@
     <div id="chat-container" class="chat-container">
         <div class="message bot-message">
             <div class="message-header">
-                <i class="fas fa-robot"></i>
+                <!-- Заменена иконка в сообщении бота -->
+                <img src="https://i.imgur.com/Gm1.png" alt="Tegych" style="width: 20px; height: 20px; margin-right: 8px;">
                 <span>Tegych</span>
             </div>
             <div class="message-content">
@@ -1198,7 +1203,6 @@
         Telegram.WebApp.ready();
         Telegram.WebApp.expand();  // Полноэкранный режим
         Telegram.WebApp.MainButton.setText('Send to chat').show().onClick(sendToBot);
-
         // Получаем данные пользователя из Telegram
         const user = Telegram.WebApp.initDataUnsafe?.user;
         if (user) {
@@ -1206,20 +1210,16 @@
             document.getElementById('user-avatar').textContent = userInitial;
             document.getElementById('user-name').textContent = user.first_name + (user.last_name ? ' ' + user.last_name : '');
         }
-
         // Конфигурация (заменить YOUR_GROQ_API_KEY на твой токен из Groq Cloud)
         const GROQ_API_KEY = "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";  // ← ЗАМЕНИТЬ НА РЕАЛЬНЫЙ ТОКЕН
         const MODEL = "llama-3.3-70b-versatile";  // Модель от Groq
         const API_URL = "https://api.groq.com/openai/v1/chat/completions";
-
         // Список эмодзи (как в оригинале)
         const EMOJI_LIST = ["😊", "😄", "🤩", "🥳", "😎", "🤔", "🤗", "🤖", "🎨", "🎶", "🎬", "✨", "🎉", "🔥", "🌟"];
-
         // История чата (messages для Groq)
         let chatHistory = [
             { role: "system", content: "You are Tegych, a helpful assistant. You are an expert in science, art, music, movies, and entertainment. Answer in English, friendly and creative." }
         ];
-
         // Загружаем историю из localStorage
         const savedHistory = localStorage.getItem('chatHistory');
         if (savedHistory) {
@@ -1231,10 +1231,8 @@
                 console.error('Error loading chat history:', e);
             }
         }
-
         // Кэш для часто задаваемых вопросов
         const questionCache = new Map();
-
         // Элементы DOM
         const chatContainer = document.getElementById('chat-container');
         const userInput = document.getElementById('user-input');
@@ -1243,10 +1241,8 @@
         const chatHistoryEl = document.getElementById('chat-history');
         const emojiPicker = document.getElementById('emoji-picker');
         const languageSelect = document.getElementById('language-select');
-
         // Текущий язык
         let currentLanguage = 'en';
-
         // Функция показа уведомлений
         function showNotification(message, type = 'success') {
             notificationEl.textContent = message;
@@ -1256,13 +1252,11 @@
                 notificationEl.classList.remove('show');
             }, 3000);
         }
-
         // Функция вставки быстрых действий
         function insertQuickAction(text) {
             userInput.value = text;
             userInput.focus();
         }
-
         // Функция очистки чата
         function clearChat() {
             chatContainer.innerHTML = '';
@@ -1273,7 +1267,6 @@
             addWelcomeMessage();
             showNotification('Chat cleared', 'success');
         }
-
         // Функция добавления приветственного сообщения
         function addWelcomeMessage() {
             const welcomeMessage = document.createElement('div');
@@ -1281,7 +1274,8 @@
             if (currentLanguage === 'ru') {
                 welcomeMessage.innerHTML = `
                     <div class="message-header">
-                        <i class="fas fa-robot"></i>
+                        <!-- Заменена иконка в приветственном сообщении -->
+                        <img src="https://i.imgur.com/Gm1.png" alt="Tegych" style="width: 20px; height: 20px; margin-right: 8px;">
                         <span>Tegych</span>
                     </div>
                     <div class="message-content">
@@ -1293,7 +1287,8 @@
             } else {
                 welcomeMessage.innerHTML = `
                     <div class="message-header">
-                        <i class="fas fa-robot"></i>
+                        <!-- Заменена иконка в приветственном сообщении -->
+                        <img src="https://i.imgur.com/Gm1.png" alt="Tegych" style="width: 20px; height: 20px; margin-right: 8px;">
                         <span>Tegych</span>
                     </div>
                     <div class="message-content">
@@ -1306,7 +1301,6 @@
             chatContainer.appendChild(welcomeMessage);
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
-
         // Функция отображения чата из истории
         function renderChatFromHistory() {
             chatContainer.innerHTML = '';
@@ -1315,7 +1309,6 @@
                 addMessage(msg.content, msg.role === 'user' ? 'user' : 'bot');
             }
         }
-
         // Функция экспорта чата
         function exportChat() {
             const messages = [];
@@ -1324,7 +1317,8 @@
                 const content = msg.querySelector('.message-content').textContent;
                 messages.push(`${sender}: ${content}`);
             });
-            const chatText = messages.join('\n');
+            const chatText = messages.join('
+');
             const blob = new Blob([chatText], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -1336,12 +1330,10 @@
             URL.revokeObjectURL(url);
             showNotification(currentLanguage === 'ru' ? 'Чат экспортирован' : 'Chat exported', 'success');
         }
-
         // Функция переключения истории чатов
         function toggleHistory() {
             chatHistoryEl.style.display = chatHistoryEl.style.display === 'block' ? 'none' : 'block';
         }
-
         // Функция смены темы
         function changeTheme(theme) {
             document.body.setAttribute('data-theme', theme);
@@ -1353,7 +1345,6 @@
                 'info'
             );
         }
-
         // Функция смены языка
         function changeLanguage(lang) {
             currentLanguage = lang;
@@ -1377,7 +1368,6 @@
             // Перезаписываем историю с новым системным сообщением
             localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
         }
-
         // Функция обновления интерфейса при смене языка
         function updateInterfaceLanguage() {
             const elements = document.querySelectorAll('[data-en]');
@@ -1389,7 +1379,6 @@
                 }
             });
         }
-
         // Функция прикрепления файла
         function attachFile() {
             // Создаем элемент input для выбора файла
@@ -1438,7 +1427,8 @@
                         botMessage.className = 'message bot-message';
                         botMessage.innerHTML = `
                             <div class="message-header">
-                                <i class="fas fa-robot"></i>
+                                <!-- Заменена иконка в сообщении бота после вложения файла -->
+                                <img src="https://i.imgur.com/Gm1.png" alt="Tegych" style="width: 20px; height: 20px; margin-right: 8px;">
                                 <span>Tegych</span>
                             </div>
                             <div class="message-content">
@@ -1462,25 +1452,21 @@
             fileInput.click();
             document.body.removeChild(fileInput);
         }
-
         // Функция удаления файла
         function removeFile(element) {
             const filePreview = element.parentElement;
             filePreview.remove();
         }
-
         // Функция переключения эмодзи-пикера
         function toggleEmojiPicker() {
             emojiPicker.classList.toggle('show');
         }
-
         // Функция вставки эмодзи
         function insertEmoji(emoji) {
             userInput.value += emoji;
             userInput.focus();
             emojiPicker.classList.remove('show');
         }
-
         // Функция голосового ввода
         function startVoiceInput() {
             showNotification(
@@ -1490,12 +1476,10 @@
                 'warning'
             );
         }
-
         // Функция отправки сообщения (с поддержкой стриминга от Groq)
         async function sendMessage() {
             const input = userInput.value.trim();
             if (!input) return;
-
             // Проверка кэша
             if (questionCache.has(input)) {
                 const cachedResponse = questionCache.get(input);
@@ -1509,24 +1493,19 @@
                 );
                 return;
             }
-
             // Добавляем сообщение пользователя
             addMessage(input, 'user');
             chatHistory.push({ role: "user", content: input });
             localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
             userInput.value = '';
             sendBtn.disabled = true;
-
             // Создаём div для ответа ИИ (с стримингом)
             const aiMessageDiv = addMessage('', 'bot');
             aiMessageDiv.classList.add('streaming');
-
             // Показываем индикатор набора текста
             showTypingIndicator();
-
             try {
                 console.log('Sending request to Groq:', { model: MODEL, messages: chatHistory.slice(-5) });
-
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: {
@@ -1542,28 +1521,24 @@
                         stream: true  // Включаем стриминг
                     })
                 });
-
                 console.log('Response status:', response.status);
-
                 if (!response.ok) {
                     const errorText = await response.text();
                     console.error('Groq API Error:', response.status, errorText);
                     throw new Error(`API ${response.status}: ${errorText}`);
                 }
-
                 // Убираем индикатор набора
                 hideTypingIndicator();
-
                 // Обработка стриминга (SSE-формат)
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
                 let aiResponse = '';
-
                 while (true) {
                     const { done, value } = await reader.read();
                     if (done) break;
                     const chunk = decoder.decode(value);
-                    const lines = chunk.split('\n');
+                    const lines = chunk.split('
+');
                     for (const line of lines) {
                         if (line.startsWith('data: ')) {
                             const data = line.slice(6);
@@ -1582,28 +1557,23 @@
                         }
                     }
                 }
-
                 // Финализируем ответ (если пустой — fallback)
                 if (!aiResponse) aiResponse = 
                     currentLanguage === 'ru' ? 
                     'Нет ответа от ИИ. Попробуйте снова.' : 
                     'No response from AI. Try again.';
-
                 // Добавляем эмодзи (1-3 случайных)
                 const emojiCount = Math.floor(Math.random() * 3) + 1;
                 const emojis = EMOJI_LIST.sort(() => 0.5 - Math.random()).slice(0, emojiCount);
                 aiResponse += ' ' + emojis.join(' ');
-
                 aiMessageDiv.innerHTML = escapeHtml(aiResponse);
                 aiMessageDiv.classList.remove('streaming', 'loading');
                 chatHistory.push({ role: "assistant", content: aiResponse });
                 localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
-
                 // Кэшируем ответ (если вопрос короче 100 символов)
                 if (input.length < 100) {
                     questionCache.set(input, aiResponse);
                 }
-
             } catch (error) {
                 console.error('Full Groq API Error:', error);
                 console.error('GROQ_API_KEY preview:', GROQ_API_KEY ? GROQ_API_KEY.substring(0, 10) + '...' : 'EMPTY');
@@ -1624,7 +1594,6 @@
                 userInput.focus();
             }
         }
-
         // Добавление сообщения в UI
         function addMessage(text, sender) {
             const messageDiv = document.createElement('div');
@@ -1634,7 +1603,8 @@
             if (sender === 'user') {
                 header.innerHTML = `<i class="fas fa-user"></i><span>${currentLanguage === 'ru' ? 'Вы' : 'User'}</span>`;
             } else {
-                header.innerHTML = '<i class="fas fa-robot"></i><span>Tegych</span>';
+                // Заменена иконка в функции addMessage
+                header.innerHTML = `<img src="https://i.imgur.com/Gm1.png" alt="Tegych" style="width: 20px; height: 20px; margin-right: 8px;"><span>Tegych</span>`;
             }
             const content = document.createElement('div');
             content.className = 'message-content';
@@ -1645,7 +1615,6 @@
             chatContainer.scrollTop = chatContainer.scrollHeight;
             return messageDiv;
         }
-
         // Показать индикатор набора текста
         function showTypingIndicator() {
             const typingDiv = document.createElement('div');
@@ -1660,7 +1629,6 @@
             chatContainer.appendChild(typingDiv);
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
-
         // Скрыть индикатор набора текста
         function hideTypingIndicator() {
             const typingIndicator = document.getElementById('typing-indicator');
@@ -1668,39 +1636,33 @@
                 typingIndicator.remove();
             }
         }
-
         // Эскейп HTML и форматирование Markdown
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
-
         // Отправка данных боту
         function sendToBot() {
             const lastMessage = chatHistory[chatHistory.length - 1]?.content || 'Chat ended';
             Telegram.WebApp.sendData(JSON.stringify({ chat_summary: lastMessage }));
             Telegram.WebApp.close();
         }
-
         // Обработка Enter
         userInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') sendMessage();
         });
-
         // Закрытие эмодзи-пикера при клике вне его
         document.addEventListener('click', (e) => {
             if (!emojiPicker.contains(e.target) && !e.target.closest('.action-btn')) {
                 emojiPicker.classList.remove('show');
             }
         });
-
         // Загрузка темы из localStorage
         const savedTheme = localStorage.getItem('selectedTheme');
         if (savedTheme) {
             changeTheme(savedTheme);
         }
-
         // Инициализация
         userInput.focus();
     </script>
