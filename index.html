@@ -1280,12 +1280,10 @@
             welcomeMessage.className = 'message bot-message';
             if (currentLanguage === 'ru') {
                 welcomeMessage.innerHTML = `
-                    if (currentLanguage === 'ru') {
-    welcomeMessage.innerHTML = `
-        <div class="message-header">
-            <img src="Tegych logo.png" alt="Tegych Logo" style="width: 20px; height: 20px; border-radius: 50%; vertical-align: middle; margin-right: 5px;">
-            <span>Tegych</span>
-        </div>
+                    <div class="message-header">
+                        <i class="fas fa-robot"></i>
+                        <span>Tegych</span>
+                    </div>
                     <div class="message-content">
                         Привет! Я твой электронный друг Tegych. 🤖<br>
                         Я гуру в различных научных областях и обожаю обсуждать искусство, музыку, кино и развлечения. 🎨🎶🎬<br>
@@ -1293,11 +1291,11 @@
                     </div>
                 `;
             } else {
-    welcomeMessage.innerHTML = `
-        <div class="message-header">
-            <img src="Tegych logo.png" alt="Tegych Logo" style="width: 20px; height: 20px; border-radius: 50%; vertical-align: middle; margin-right: 5px;">
-            <span>Tegych</span>
-        </div>  
+                welcomeMessage.innerHTML = `
+                    <div class="message-header">
+                        <i class="fas fa-robot"></i>
+                        <span>Tegych</span>
+                    </div>
                     <div class="message-content">
                         Hey, Hi! I'm your electronic friend Tegych. 🤖<br>
                         I'm a guru in various scientific fields and love discussing art, music, movies, and entertainment. 🎨🎶🎬<br>
@@ -1439,10 +1437,10 @@
                         const botMessage = document.createElement('div');
                         botMessage.className = 'message bot-message';
                         botMessage.innerHTML = `
-    <div class="message-header">
-        <img src="Tegych logo.png" alt="Tegych Logo" style="width: 20px; height: 20px; border-radius: 50%; vertical-align: middle; margin-right: 5px;">
-        <span>Tegych</span>
-    </div>
+                            <div class="message-header">
+                                <i class="fas fa-robot"></i>
+                                <span>Tegych</span>
+                            </div>
                             <div class="message-content">
                                 ${currentLanguage === 'ru' ? 
                                 `Я получил ваш файл: <strong>${file.name}</strong>. Как я могу помочь вам с ним?` : 
