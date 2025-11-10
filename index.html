@@ -96,6 +96,11 @@
             display: none;
         }
 
+        .buffs {
+            margin-top: 20px;
+            color: #aaffaa;
+        }
+
         .click-effect {
             position: absolute;
             font-size: 20px;
@@ -117,8 +122,13 @@
     <button id="clicker" onclick="clickCounter()">💥</button>
 
     <div id="daily-reward" class="daily-reward">
-        <p>🎁 Ежедневная награда: <span id="daily-amount">100</span> очков!</p>
+        <p>🎁 Ежедневная награда: <span id="daily-text">+100 очков!</span></p>
         <button onclick="claimDaily()">Забрать</button>
+    </div>
+
+    <div class="buffs">
+        <p>Активные баффы:</p>
+        <div id="active-buffs"></div>
     </div>
 
     <h2>🚀 Улучшения</h2>
@@ -150,10 +160,13 @@
         let achievements = [100, 500, 1000, 5000];
         let unlocked = new Set();
 
+        // Баффы
+        let buffs = [];
+
         // Создаём звуки
-        const clickSound = new Audio("data:audio/mpeg;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsRbAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQMSkAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV");
-        const purchaseSound = new Audio("data:audio/mpeg;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsRbAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQMSkAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV");
-        const achievementSound = new Audio("data:audio/mpeg;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsRbAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQMSkAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV");
+        const clickSound = new Audio("audio/mpeg;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsRbAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQMSkAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV");
+        const purchaseSound = new Audio("audio/mpeg;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsRbAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQMSkAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV");
+        const achievementSound = new Audio("audio/mpeg;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsRbAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQMSkAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV");
 
         // Загрузка сохранённого прогресса
         window.onload = function () {
@@ -164,9 +177,11 @@
                 autoClick = saved.autoClick || 0;
                 multiplier = saved.multiplier || 1;
                 unlocked = new Set(saved.unlocked || []);
+                buffs = saved.buffs || [];
                 document.getElementById("counter").innerText = count;
                 document.getElementById("perClick").innerText = perClick;
                 document.getElementById("autoClick").innerText = autoClick;
+                updateBuffsDisplay();
             }
 
             // Проверяем ежедневную награду
@@ -186,10 +201,61 @@
 
         // Получить ежедневную награду
         function claimDaily() {
-            count += 100;
-            document.getElementById("counter").innerText = count;
+            const rewards = [
+                { type: "points", amount: 100, text: "+100 очков!" },
+                { type: "multiplier", amount: 2, duration: 30, text: "x2 на 30 сек!" },
+                { type: "click", amount: 5, duration: 20, text: "+5 за клик на 20 сек!" },
+                { type: "auto", amount: 1, duration: 60, text: "+1 автоклик на 60 сек!" }
+            ];
+
+            const reward = rewards[Math.floor(Math.random() * rewards.length)];
+            document.getElementById("daily-text").innerText = reward.text;
+
+            if (reward.type === "points") {
+                count += reward.amount;
+                document.getElementById("counter").innerText = count;
+            } else if (reward.type === "multiplier") {
+                addBuff("multiplier", reward.amount, reward.duration);
+            } else if (reward.type === "click") {
+                addBuff("click", reward.amount, reward.duration);
+            } else if (reward.type === "auto") {
+                addBuff("auto", reward.amount, reward.duration);
+            }
+
             localStorage.setItem('lastLogin', new Date().toDateString());
             document.getElementById("daily-reward").style.display = "none";
+        }
+
+        // Добавление баффа
+        function addBuff(type, amount, duration) {
+            const buff = { type, amount, duration, id: Date.now() };
+            buffs.push(buff);
+            updateBuffsDisplay();
+
+            setTimeout(() => {
+                buffs = buffs.filter(b => b.id !== buff.id);
+                updateBuffsDisplay();
+            }, duration * 1000);
+        }
+
+        // Отображение активных баффов
+        function updateBuffsDisplay() {
+            const activeBuffs = document.getElementById("active-buffs");
+            activeBuffs.innerHTML = "";
+
+            buffs.forEach(buff => {
+                const div = document.createElement("div");
+                div.innerText = `${getBuffText(buff.type)}: ${buff.amount} (${buff.duration} сек)`;
+                activeBuffs.appendChild(div);
+            });
+        }
+
+        // Название баффа
+        function getBuffText(type) {
+            if (type === "multiplier") return "Множитель";
+            if (type === "click") return "Клик";
+            if (type === "auto") return "Автоклик";
+            return "Неизвестный";
         }
 
         // Сохранение прогресса
@@ -199,13 +265,21 @@
                 perClick: perClick,
                 autoClick: autoClick,
                 multiplier: multiplier,
-                unlocked: Array.from(unlocked)
+                unlocked: Array.from(unlocked),
+                buffs: buffs
             }));
         }
 
         // Клик
         function clickCounter() {
-            count += perClick * multiplier;
+            let clickValue = perClick;
+
+            // Применяем баффы
+            buffs.forEach(buff => {
+                if (buff.type === "click") clickValue += buff.amount;
+            });
+
+            count += clickValue * multiplier;
             document.getElementById("counter").innerText = count;
 
             // Анимация +1
@@ -224,7 +298,7 @@
             const button = document.getElementById("clicker");
             const effect = document.createElement("div");
             effect.classList.add("click-effect");
-            effect.innerText = `+${perClick * multiplier}`;
+            effect.innerText = `+${perClick}`;
             effect.style.left = Math.random() * 80 + 10 + "%";
             effect.style.top = "50%";
             document.body.appendChild(effect);
@@ -302,8 +376,15 @@
 
         // Автокликер
         setInterval(() => {
-            if (autoClick > 0) {
-                count += autoClick * multiplier;
+            let autoValue = autoClick;
+
+            // Применяем баффы
+            buffs.forEach(buff => {
+                if (buff.type === "auto") autoValue += buff.amount;
+            });
+
+            if (autoValue > 0) {
+                count += autoValue * multiplier;
                 document.getElementById("counter").innerText = count;
             }
         }, 1000);
