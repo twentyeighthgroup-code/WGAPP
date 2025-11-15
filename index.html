@@ -343,6 +343,15 @@
         .story-btn {
             margin-top: 10px;
         }
+
+        /* Сражение */
+        .battle {
+            background: rgba(255, 0, 0, 0.2);
+            padding: 15px;
+            margin: 20px;
+            border-radius: 10px;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -408,6 +417,13 @@
         <p>📍 Локация: Земля</p>
         <p>👾 Враг: Астероид</p>
         <button class="story-btn" onclick="nextStory()">Продолжить</button>
+    </div>
+
+    <div id="battle" class="battle">
+        <p>⚔️ Сражение с: <span id="battle-enemy">Астероид</span></p>
+        <p>Кликов осталось: <span id="clicks-left">10</span></p>
+        <p>Время: <span id="time-left-battle">10</span> сек</p>
+        <button onclick="startBattle()">Начать сражение</button>
     </div>
 
     <button id="share-btn" onclick="shareResult()">📤 Поделиться результатом</button>
@@ -496,7 +512,9 @@
         let story = {
             location: "Земля",
             enemy: "Астероид",
-            stage: 0
+            stage: 0,
+            requiredScore: 1000, // Сколько нужно очков для следующего этапа
+            path: null // "moon" или "mars"
         };
 
         // Таланты
@@ -542,6 +560,15 @@
             { name: "Галактические Гонки", duration: 7, start: new Date("2025-11-22"), active: false }
         ];
 
+        // Сражение
+        let battle = {
+            active: false,
+            clicksLeft: 10,
+            timeLeft: 10,
+            enemy: "Астероид",
+            reward: 500
+        };
+
         // Создаём звуки
         const clickSound = new Audio("audio/mpeg;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsRbAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQMSkAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV");
         const purchaseSound = new Audio("audio/mpeg;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsRbAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQMSkAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV");
@@ -561,6 +588,7 @@
                 currentSkin = saved.currentSkin || 0;
                 currentGalaxy = saved.currentGalaxy || 0;
                 story = saved.story || story;
+                battle = saved.battle || battle;
                 quests = saved.quests || quests;
                 talents = saved.talents || talents;
                 skills = saved.skills || skills;
@@ -643,42 +671,117 @@
 
         // Продолжить историю
         function nextStory() {
-            story.stage++;
+            if (count < story.requiredScore) {
+                showAchievement(`Нужно ${story.requiredScore} очков, чтобы продолжить!`);
+                return;
+            }
+
+            if (story.stage === 0) {
+                // Выбор: Луна или Марс
+                document.getElementById("story").innerHTML = `
+                    <p>🌌 Вы покидаете Землю. Куда направимся?</p>
+                    <button class="story-btn" onclick="choosePath('moon')">🚀 Луна</button>
+                    <button class="story-btn" onclick="choosePath('mars')">🔴 Марс</button>
+                `;
+                return;
+            }
+
             if (story.stage === 1) {
-                story.location = "Луна";
-                story.enemy = "Пират";
-                if (currentSkin < 9) {
-                    currentSkin = 9; // Лунный скин
-                    applySkin();
-                    showAchievement("🌕 Новый скин разблокирован: Лунный!");
+                if (story.path === "moon") {
+                    story.location = "Луна";
+                    story.enemy = "Пират";
+                    story.requiredScore = 5000;
+                    if (currentSkin < 9) {
+                        currentSkin = 9; // Лунный скин
+                        applySkin();
+                        showAchievement("🌕 Новый скин разблокирован: Лунный!");
+                    }
+                    showAchievement("🌌 Вы прибыли на Луну. Враг: Пират");
+                } else if (story.path === "mars") {
+                    story.location = "Марс";
+                    story.enemy = "Босс";
+                    story.requiredScore = 10000;
+                    if (currentSkin < 10) {
+                        currentSkin = 10; // Марсианский скин
+                        applySkin();
+                        showAchievement("🔴 Новый скин разблокирован: Марсианский!");
+                    }
+                    showAchievement("🌌 Вы прибыли на Марс. Враг: Босс");
                 }
-                showAchievement("🌌 Вы прибыли на Луну. Враг: Пират");
             } else if (story.stage === 2) {
-                story.location = "Марс";
-                story.enemy = "Босс";
-                if (currentSkin < 10) {
-                    currentSkin = 10; // Марсианский скин
-                    applySkin();
-                    showAchievement("🔴 Новый скин разблокирован: Марсианский!");
-                }
-                showAchievement("🌌 Вы прибыли на Марс. Враг: Босс");
-            } else if (story.stage === 3) {
                 story.location = "Квазар";
                 story.enemy = "Темная Материя";
-                if (count >= 10000 && currentSkin < 11) {
+                story.requiredScore = Infinity; // Никогда не требует
+                if (currentSkin < 11) {
                     currentSkin = 11; // Босс-скин
                     applySkin();
                     showAchievement("👾 Новый скин разблокирован: Босс!");
                 }
                 showAchievement("🌌 Вы прибыли в Квазар. Враг: Темная Материя");
                 story.stage = 0;
+                story.path = null;
             }
+
             document.getElementById("story").innerHTML = `
                 <p>🌌 Сюжет: Вы отправляетесь в космическое путешествие, чтобы спасти Землю от темной материи.</p>
                 <p>📍 Локация: ${story.location}</p>
                 <p>👾 Враг: ${story.enemy}</p>
-                <button class="story-btn" onclick="nextStory()">Продолжить</button>
+                <p>🎯 Задание: наберите ${story.requiredScore} очков</p>
+                <button class="story-btn" onclick="startBattle()">Сражение</button>
             `;
+            story.stage++;
+        }
+
+        // Начать сражение
+        function startBattle() {
+            battle.active = true;
+            battle.enemy = story.enemy;
+            battle.clicksLeft = 10;
+            battle.timeLeft = 10;
+            document.getElementById("battle-enemy").innerText = battle.enemy;
+            document.getElementById("clicks-left").innerText = battle.clicksLeft;
+            document.getElementById("time-left-battle").innerText = battle.timeLeft;
+            document.getElementById("battle").style.display = "block";
+            document.getElementById("clicker").onclick = clickBattle;
+            showAchievement(`⚔️ Сражение с ${battle.enemy} начато!`);
+        }
+
+        // Клик в сражении
+        function clickBattle() {
+            if (!battle.active) return;
+            battle.clicksLeft--;
+            document.getElementById("clicks-left").innerText = battle.clicksLeft;
+            if (battle.clicksLeft <= 0) {
+                // Победа
+                count += battle.reward;
+                document.getElementById("counter").innerText = count;
+                document.getElementById("battle").style.display = "none";
+                document.getElementById("clicker").onclick = clickCounter;
+                showAchievement(`🎉 Победа! Награда: ${battle.reward} очков!`);
+                battle.active = false;
+            }
+        }
+
+        // Обновление сражения
+        setInterval(() => {
+            if (battle.active) {
+                battle.timeLeft--;
+                document.getElementById("time-left-battle").innerText = battle.timeLeft;
+                if (battle.timeLeft <= 0) {
+                    // Поражение
+                    document.getElementById("battle").style.display = "none";
+                    document.getElementById("clicker").onclick = clickCounter;
+                    showAchievement(`💥 Поражение! Попробуйте снова.`);
+                    battle.active = false;
+                }
+            }
+        }, 1000);
+
+        // Выбрать путь
+        function choosePath(path) {
+            story.path = path;
+            story.stage = 1;
+            nextStory();
         }
 
         // Проверка ежедневной награды
@@ -1240,6 +1343,7 @@
                 currentSkin: currentSkin,
                 currentGalaxy: currentGalaxy,
                 story: story,
+                battle: battle,
                 quests: quests,
                 talents: talents,
                 skills: skills,
