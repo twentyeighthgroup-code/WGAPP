@@ -477,6 +477,26 @@
             <p>Цена: <span id="cost3">200</span></p>
             <button onclick="buyMultiplier()">Купить</button>
         </div>
+        <div class="shop-item">
+            <p>💥 x1.5 за клик</p>
+            <p>Цена: <span id="cost4">300</span></p>
+            <button onclick="buyUpgradeX15()">Купить</button>
+        </div>
+        <div class="shop-item">
+            <p>🤖 +0.5 к автоклику</p>
+            <p>Цена: <span id="cost5">100</span></p>
+            <button onclick="buyAutoclickerPlus()">Купить</button>
+        </div>
+        <div class="shop-item">
+            <p>🛡️ Бонус к баффам +10%</p>
+            <p>Цена: <span id="cost6">400</span></p>
+            <button onclick="buyBuffBonus()">Купить</button>
+        </div>
+        <div class="shop-item">
+            <p>🤖 Автоклик x2</p>
+            <p>Цена: <span id="cost7">600</span></p>
+            <button onclick="buyAutoclickerX2()">Купить</button>
+        </div>
     </div>
 
     <div id="achievement" class="achievement">Достижение: 100 кликов!</div>
@@ -551,7 +571,11 @@
             { name: "Космический", gradient: "linear-gradient(145deg, #000000, #4b6cb7)", animation: "spin" }, // Сезонный
             { name: "Лунный", gradient: "linear-gradient(145deg, #a9a9a9, #d3d3d3)", animation: "glow" }, // За локацию Луна
             { name: "Марсианский", gradient: "linear-gradient(145deg, #ff4500, #8b0000)", animation: "pulse" }, // За локацию Марс
-            { name: "Босс", gradient: "linear-gradient(145deg, #4b0082, #000000)", animation: "spin" } // За победу над боссом
+            { name: "Босс", gradient: "linear-gradient(145deg, #4b0082, #000000)", animation: "spin" }, // За победу над боссом
+            { name: "Темный", gradient: "linear-gradient(145deg, #000000, #4b0082)", animation: "spin" }, // За Темную Материю
+            { name: "Квазарный", gradient: "linear-gradient(145deg, #0000ff, #00ffff)", animation: "glow" }, // За Квазар
+            { name: "Временной", gradient: "linear-gradient(145deg, #ffffff, #c0c0c0)", animation: "pulse" }, // За Коридор Времени
+            { name: "Призрачный", gradient: "linear-gradient(145deg, #808080, #a9a9a9)", animation: "glow" } // За Галактику Призраков
         ];
 
         // Сезоны
@@ -567,6 +591,17 @@
             timeLeft: 10,
             enemy: "Астероид",
             reward: 500
+        };
+
+        // Враги (количество кликов, время, награда)
+        const enemies = {
+            "Астероид": { clicks: 10, time: 10, reward: "points" },
+            "Пират": { clicks: 15, time: 15, reward: "buff" },
+            "Босс": { clicks: 20, time: 10, reward: "skin" },
+            "Темная Материя": { clicks: 30, time: 10, reward: "skin" },
+            "Квазар": { clicks: 40, time: 15, reward: "skin" },
+            "Коридор Времени": { clicks: 50, time: 20, reward: "skin" },
+            "Галактика Призраков": { clicks: 60, time: 25, reward: "skin" }
         };
 
         // Создаём звуки
@@ -711,13 +746,53 @@
             } else if (story.stage === 2) {
                 story.location = "Квазар";
                 story.enemy = "Темная Материя";
-                story.requiredScore = Infinity; // Никогда не требует
+                story.requiredScore = 20000;
                 if (currentSkin < 11) {
                     currentSkin = 11; // Босс-скин
                     applySkin();
                     showAchievement("👾 Новый скин разблокирован: Босс!");
                 }
                 showAchievement("🌌 Вы прибыли в Квазар. Враг: Темная Материя");
+            } else if (story.stage === 3) {
+                story.location = "Квазар";
+                story.enemy = "Квазар";
+                story.requiredScore = 50000;
+                if (currentSkin < 12) {
+                    currentSkin = 12; // Темный скин
+                    applySkin();
+                    showAchievement("🌌 Новый скин разблокирован: Темный!");
+                }
+                showAchievement("🌌 Вы в Квазаре. Враг: Квазар");
+            } else if (story.stage === 4) {
+                story.location = "Коридор Времени";
+                story.enemy = "Коридор Времени";
+                story.requiredScore = 100000;
+                if (currentSkin < 13) {
+                    currentSkin = 13; // Квазарный скин
+                    applySkin();
+                    showAchievement("🌌 Новый скин разблокирован: Квазарный!");
+                }
+                showAchievement("🌌 Вы в Коридоре Времени. Враг: Коридор Времени");
+            } else if (story.stage === 5) {
+                story.location = "Галактика Призраков";
+                story.enemy = "Галактика Призраков";
+                story.requiredScore = 200000;
+                if (currentSkin < 14) {
+                    currentSkin = 14; // Временной скин
+                    applySkin();
+                    showAchievement("🌌 Новый скин разблокирован: Временной!");
+                }
+                showAchievement("🌌 Вы в Галактике Призраков. Враг: Галактика Призраков");
+            } else if (story.stage === 6) {
+                story.location = "Финал";
+                story.enemy = "Финал";
+                story.requiredScore = Infinity; // Никогда не требует
+                if (currentSkin < 15) {
+                    currentSkin = 15; // Призрачный скин
+                    applySkin();
+                    showAchievement("🌌 Новый скин разблокирован: Призрачный!");
+                }
+                showAchievement("🌌 Поздравляем! Вы прошли игру!");
                 story.stage = 0;
                 story.path = null;
             }
@@ -736,8 +811,9 @@
         function startBattle() {
             battle.active = true;
             battle.enemy = story.enemy;
-            battle.clicksLeft = 10;
-            battle.timeLeft = 10;
+            const enemyData = enemies[battle.enemy];
+            battle.clicksLeft = enemyData.clicks;
+            battle.timeLeft = enemyData.time;
             document.getElementById("battle-enemy").innerText = battle.enemy;
             document.getElementById("clicks-left").innerText = battle.clicksLeft;
             document.getElementById("time-left-battle").innerText = battle.timeLeft;
@@ -753,11 +829,35 @@
             document.getElementById("clicks-left").innerText = battle.clicksLeft;
             if (battle.clicksLeft <= 0) {
                 // Победа
-                count += battle.reward;
-                document.getElementById("counter").innerText = count;
+                const enemyData = enemies[battle.enemy];
+                if (enemyData.reward === "points") {
+                    count += 500;
+                    document.getElementById("counter").innerText = count;
+                    showAchievement(`🎉 Победа! Награда: 500 очков!`);
+                } else if (enemyData.reward === "buff") {
+                    addBuff("multiplier", 2, 30);
+                    showAchievement(`🎉 Победа! Награда: x2 на 30 сек!`);
+                } else if (enemyData.reward === "skin") {
+                    if (battle.enemy === "Темная Материя" && currentSkin < 12) {
+                        currentSkin = 12; // Темный скин
+                        applySkin();
+                        showAchievement("🎉 Победа! Награда: новый скин разблокирован!");
+                    } else if (battle.enemy === "Квазар" && currentSkin < 13) {
+                        currentSkin = 13; // Квазарный скин
+                        applySkin();
+                        showAchievement("🎉 Победа! Награда: новый скин разблокирован!");
+                    } else if (battle.enemy === "Коридор Времени" && currentSkin < 14) {
+                        currentSkin = 14; // Временной скин
+                        applySkin();
+                        showAchievement("🎉 Победа! Награда: новый скин разблокирован!");
+                    } else if (battle.enemy === "Галактика Призраков" && currentSkin < 15) {
+                        currentSkin = 15; // Призрачный скин
+                        applySkin();
+                        showAchievement("🎉 Победа! Награда: новый скин разблокирован!");
+                    }
+                }
                 document.getElementById("battle").style.display = "none";
                 document.getElementById("clicker").onclick = clickCounter;
-                showAchievement(`🎉 Победа! Награда: ${battle.reward} очков!`);
                 battle.active = false;
             }
         }
@@ -851,6 +951,7 @@
             if (type === "multiplier") return "Множитель";
             if (type === "click") return "Клик";
             if (type === "auto") return "Автоклик";
+            if (type === "shield") return "Щит";
             return "Неизвестный";
         }
 
@@ -1330,29 +1431,171 @@
             }
         }, 500);
 
-        // Сохранение прогресса
-        function saveGame() {
-            localStorage.setItem('clickerSave', JSON.stringify({
-                count: count,
-                level: level,
-                perClick: perClick,
-                autoClick: autoClick,
-                multiplier: multiplier,
-                talentPoints: talentPoints,
-                skillPoints: skillPoints,
-                currentSkin: currentSkin,
-                currentGalaxy: currentGalaxy,
-                story: story,
-                battle: battle,
-                quests: quests,
-                talents: talents,
-                skills: skills,
-                unlocked: Array.from(unlocked),
-                buffs: buffs,
-                lastRandomQuestTime: lastRandomQuestTime,
-                randomQuest: randomQuest
-            }));
+        // Улучшения
+        function buyUpgrade() {
+            const cost = parseInt(document.getElementById("cost1").innerText);
+            if (count >= cost) {
+                count -= cost;
+                perClick += 1;
+                document.getElementById("cost1").innerText = Math.floor(cost * 1.8);
+                document.getElementById("perClick").innerText = perClick.toFixed(2);
+                document.getElementById("counter").innerText = count;
+
+                // Прогресс по квесту
+                quests.forEach(quest => {
+                    if (!quest.completed && (quest.id === 3)) { // Улучшения
+                        quest.progress++;
+                    }
+                });
+                if (randomQuest && !randomQuest.completed && randomQuest.id === "random") {
+                    randomQuest.progress++;
+                }
+                checkQuests();
+
+                purchaseSound.currentTime = 0;
+                purchaseSound.play();
+            }
         }
+
+        function buyAutoclicker() {
+            const cost = parseInt(document.getElementById("cost2").innerText);
+            if (count >= cost) {
+                count -= cost;
+                autoClick += 1;
+                document.getElementById("cost2").innerText = Math.floor(cost * 1.8);
+                document.getElementById("autoClick").innerText = autoClick.toFixed(2);
+                document.getElementById("counter").innerText = count;
+
+                // Прогресс по квесту
+                quests.forEach(quest => {
+                    if (!quest.completed && (quest.id === 3)) { // Улучшения
+                        quest.progress++;
+                    }
+                });
+                if (randomQuest && !randomQuest.completed && randomQuest.id === "random") {
+                    randomQuest.progress++;
+                }
+                checkQuests();
+
+                purchaseSound.currentTime = 0;
+                purchaseSound.play();
+            }
+        }
+
+        function buyMultiplier() {
+            const cost = parseInt(document.getElementById("cost3").innerText);
+            if (count >= cost) {
+                count -= cost;
+                multiplier *= 2;
+                document.getElementById("cost3").innerText = Math.floor(cost * 3);
+                document.getElementById("counter").innerText = count;
+
+                // Прогресс по квесту
+                quests.forEach(quest => {
+                    if (!quest.completed && (quest.id === 3)) { // Улучшения
+                        quest.progress++;
+                    }
+                });
+                if (randomQuest && !randomQuest.completed && randomQuest.id === "random") {
+                    randomQuest.progress++;
+                }
+                checkQuests();
+
+                purchaseSound.currentTime = 0;
+                purchaseSound.play();
+            }
+        }
+
+        function buyUpgradeX15() {
+            const cost = parseInt(document.getElementById("cost4").innerText);
+            if (count >= cost) {
+                count -= cost;
+                perClick *= 1.5;
+                document.getElementById("cost4").innerText = Math.floor(cost * 2);
+                document.getElementById("perClick").innerText = perClick.toFixed(2);
+                document.getElementById("counter").innerText = count;
+
+                purchaseSound.currentTime = 0;
+                purchaseSound.play();
+            }
+        }
+
+        function buyAutoclickerPlus() {
+            const cost = parseInt(document.getElementById("cost5").innerText);
+            if (count >= cost) {
+                count -= cost;
+                autoClick += 0.5;
+                document.getElementById("cost5").innerText = Math.floor(cost * 1.8);
+                document.getElementById("autoClick").innerText = autoClick.toFixed(2);
+                document.getElementById("counter").innerText = count;
+
+                purchaseSound.currentTime = 0;
+                purchaseSound.play();
+            }
+        }
+
+        function buyBuffBonus() {
+            const cost = parseInt(document.getElementById("cost6").innerText);
+            if (count >= cost) {
+                count -= cost;
+                // Добавляем бафф, который увеличивает длительность других баффов
+                addBuff("shield", 1, 60); // 60 сек защита от вражеских баффов
+                document.getElementById("cost6").innerText = Math.floor(cost * 2);
+                document.getElementById("counter").innerText = count;
+
+                purchaseSound.currentTime = 0;
+                purchaseSound.play();
+            }
+        }
+
+        function buyAutoclickerX2() {
+            const cost = parseInt(document.getElementById("cost7").innerText);
+            if (count >= cost) {
+                count -= cost;
+                autoClick *= 2;
+                document.getElementById("cost7").innerText = Math.floor(cost * 2);
+                document.getElementById("autoClick").innerText = autoClick.toFixed(2);
+                document.getElementById("counter").innerText = count;
+
+                purchaseSound.currentTime = 0;
+                purchaseSound.play();
+            }
+        }
+
+        // Автокликер
+        setInterval(() => {
+            let autoValue = autoClick;
+
+            // Применяем таланты
+            autoValue += talents.autoBonus.level * talents.autoBonus.value;
+
+            // Применяем умения
+            autoValue += skills.autoBonus.level * skills.autoBonus.value;
+
+            // Применяем баффы
+            buffs.forEach(buff => {
+                if (buff.type === "auto") autoValue += buff.amount;
+            });
+
+            // Применяем бонус галактики
+            autoValue *= galaxies[currentGalaxy].bonus;
+
+            if (autoValue > 0) {
+                count += autoValue * multiplier;
+                document.getElementById("counter").innerText = count;
+
+                // Прогресс по квесту (очки)
+                quests.forEach(quest => {
+                    if (!quest.completed && (quest.id === 1)) { // Очки
+                        quest.progress = count;
+                    }
+                });
+                if (randomQuest && !randomQuest.completed && randomQuest.id === "random") {
+                    randomQuest.progress = count;
+                }
+                checkQuests();
+            }
+        }, 1000);
 
         // Клик
         function clickCounter() {
@@ -1446,122 +1689,33 @@
             }, 3000);
         }
 
-        // Улучшение урона клика
-        function buyUpgrade() {
-            const cost = parseInt(document.getElementById("cost1").innerText);
-            if (count >= cost) {
-                count -= cost;
-                perClick += 1;
-                document.getElementById("cost1").innerText = Math.floor(cost * 1.8);
-                document.getElementById("perClick").innerText = perClick.toFixed(2);
-                document.getElementById("counter").innerText = count;
-
-                // Прогресс по квесту
-                quests.forEach(quest => {
-                    if (!quest.completed && (quest.id === 3)) { // Улучшения
-                        quest.progress++;
-                    }
-                });
-                if (randomQuest && !randomQuest.completed && randomQuest.id === "random") {
-                    randomQuest.progress++;
-                }
-                checkQuests();
-
-                purchaseSound.currentTime = 0;
-                purchaseSound.play();
-            }
-        }
-
-        // Автокликер
-        function buyAutoclicker() {
-            const cost = parseInt(document.getElementById("cost2").innerText);
-            if (count >= cost) {
-                count -= cost;
-                autoClick += 1;
-                document.getElementById("cost2").innerText = Math.floor(cost * 1.8);
-                document.getElementById("autoClick").innerText = autoClick.toFixed(2);
-                document.getElementById("counter").innerText = count;
-
-                // Прогресс по квесту
-                quests.forEach(quest => {
-                    if (!quest.completed && (quest.id === 3)) { // Улучшения
-                        quest.progress++;
-                    }
-                });
-                if (randomQuest && !randomQuest.completed && randomQuest.id === "random") {
-                    randomQuest.progress++;
-                }
-                checkQuests();
-
-                purchaseSound.currentTime = 0;
-                purchaseSound.play();
-            }
-        }
-
-        // Бонус x2 за клик
-        function buyMultiplier() {
-            const cost = parseInt(document.getElementById("cost3").innerText);
-            if (count >= cost) {
-                count -= cost;
-                multiplier *= 2;
-                document.getElementById("cost3").innerText = Math.floor(cost * 3);
-                document.getElementById("counter").innerText = count;
-
-                // Прогресс по квесту
-                quests.forEach(quest => {
-                    if (!quest.completed && (quest.id === 3)) { // Улучшения
-                        quest.progress++;
-                    }
-                });
-                if (randomQuest && !randomQuest.completed && randomQuest.id === "random") {
-                    randomQuest.progress++;
-                }
-                checkQuests();
-
-                purchaseSound.currentTime = 0;
-                purchaseSound.play();
-            }
-        }
-
-        // Автокликер
-        setInterval(() => {
-            let autoValue = autoClick;
-
-            // Применяем таланты
-            autoValue += talents.autoBonus.level * talents.autoBonus.value;
-
-            // Применяем умения
-            autoValue += skills.autoBonus.level * skills.autoBonus.value;
-
-            // Применяем баффы
-            buffs.forEach(buff => {
-                if (buff.type === "auto") autoValue += buff.amount;
-            });
-
-            // Применяем бонус галактики
-            autoValue *= galaxies[currentGalaxy].bonus;
-
-            if (autoValue > 0) {
-                count += autoValue * multiplier;
-                document.getElementById("counter").innerText = count;
-
-                // Прогресс по квесту (очки)
-                quests.forEach(quest => {
-                    if (!quest.completed && (quest.id === 1)) { // Очки
-                        quest.progress = count;
-                    }
-                });
-                if (randomQuest && !randomQuest.completed && randomQuest.id === "random") {
-                    randomQuest.progress = count;
-                }
-                checkQuests();
-            }
-        }, 1000);
-
         // Обновление случайного квеста раз в 30 секунд
         setInterval(updateRandomQuest, 30000);
 
         // Сохранение каждые 5 секунд
+        function saveGame() {
+            localStorage.setItem('clickerSave', JSON.stringify({
+                count: count,
+                level: level,
+                perClick: perClick,
+                autoClick: autoClick,
+                multiplier: multiplier,
+                talentPoints: talentPoints,
+                skillPoints: skillPoints,
+                currentSkin: currentSkin,
+                currentGalaxy: currentGalaxy,
+                story: story,
+                battle: battle,
+                quests: quests,
+                talents: talents,
+                skills: skills,
+                unlocked: Array.from(unlocked),
+                buffs: buffs,
+                lastRandomQuestTime: lastRandomQuestTime,
+                randomQuest: randomQuest
+            }));
+        }
+
         setInterval(saveGame, 5000);
     </script>
 
