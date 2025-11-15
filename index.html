@@ -12,6 +12,7 @@
             padding: 20px;
             margin: 0;
             min-height: 100vh;
+            transition: background 0.5s;
         }
 
         h1 {
@@ -161,6 +162,15 @@
             color: #aaffaa;
         }
 
+        .leaderboard {
+            background: rgba(0, 100, 100, 0.8);
+            color: white;
+            padding: 15px;
+            margin: 20px;
+            border-radius: 10px;
+            display: none;
+        }
+
         .click-effect {
             position: absolute;
             font-size: 20px;
@@ -201,6 +211,104 @@
         @keyframes floatUp {
             0% { opacity: 1; transform: translateY(0); }
             100% { opacity: 0; transform: translateY(-50px); }
+        }
+
+        /* Рулетка */
+        .wheel {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: conic-gradient(
+                #ff0000 0deg 60deg,
+                #00ff00 60deg 120deg,
+                #0000ff 120deg 180deg,
+                #ffff00 180deg 240deg,
+                #ff00ff 240deg 300deg,
+                #00ffff 300deg 360deg
+            );
+            margin: 20px auto;
+            position: relative;
+            transition: transform 3s cubic-bezier(0.17, 0.67, 0.83, 0.67);
+            cursor: pointer;
+        }
+
+        .wheel-pointer {
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-top: 20px solid red;
+            z-index: 10;
+        }
+
+        .wheel-inner {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            background: #222;
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+        }
+
+        .wheel-container {
+            display: none;
+            margin: 20px;
+        }
+
+        /* Сезон */
+        .season {
+            background: rgba(255, 100, 0, 0.3);
+            padding: 10px;
+            margin: 10px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        /* Мини-игры */
+        .minigame {
+            display: none;
+            margin: 20px;
+            padding: 20px;
+            background: rgba(0, 100, 100, 0.5);
+            border-radius: 10px;
+        }
+
+        .click-timer {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: #f00;
+            margin: 20px auto;
+            position: relative;
+            transition: background 0.1s;
+        }
+
+        .click-timer.green {
+            background: #0f0;
+        }
+
+        .coin {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: gold;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: black;
         }
     </style>
 </head>
@@ -248,6 +356,42 @@
 
     <button id="share-btn" onclick="shareResult()">📤 Поделиться результатом</button>
     <button id="send-to-chat-btn" onclick="sendResultToChat()" style="display: none;">📤 Отправить в чат</button>
+    <button id="leaderboard-btn" onclick="requestLeaderboard()" style="display: none;">🏆 Таблица лидеров</button>
+    <button id="galaxy-btn" onclick="switchGalaxy()">🌌 Переключить галактику</button>
+    <button id="wheel-btn" onclick="openWheel()">🎡 Рулетка</button>
+    <button id="season-btn" onclick="checkSeason()">🎁 Сезон</button>
+    <button id="minigame-btn" onclick="openMinigame()">🎮 Мини-игра</button>
+
+    <div id="season" class="season">
+        <p>🎉 Сезон: Космическая Охота!</p>
+        <p>Квест: Собери 10 монет за 30 секунд</p>
+        <button onclick="startMinigame('coins')">Начать</button>
+    </div>
+
+    <div id="minigame-timer" class="minigame">
+        <h3>⏱️ Кликни вовремя!</h3>
+        <div class="click-timer" id="timer" onclick="clickTimer()"></div>
+        <p>Осталось: <span id="time-left">3</span> сек</p>
+    </div>
+
+    <div id="minigame-coins" class="minigame">
+        <h3>🪙 Собери монеты!</h3>
+        <p>Собрано: <span id="coins-collected">0</span>/10</p>
+        <div id="coin-area"></div>
+    </div>
+
+    <div id="wheel-container" class="wheel-container">
+        <div class="wheel-pointer"></div>
+        <div class="wheel" id="wheel">
+            <div class="wheel-inner">Крутить!</div>
+        </div>
+        <button onclick="spinWheel()">Крутить!</button>
+    </div>
+
+    <div id="leaderboard" class="leaderboard">
+        <h3>🏆 Таблица лидеров</h3>
+        <div id="leaderboard-list"></div>
+    </div>
 
     <h2>🚀 Улучшения</h2>
     <div class="shop">
@@ -280,6 +424,14 @@
         let achievements = [100, 500, 1000, 5000];
         let unlocked = new Set();
         let currentSkin = 0;
+        let currentGalaxy = 0;
+
+        // Галактики
+        const galaxies = [
+            { name: "Млечный Путь", bg: "linear-gradient(135deg, #0f0c29, #302b63, #24243e)", bonus: 1 },
+            { name: "Андромеда", bg: "linear-gradient(135deg, #2c003e, #570a57, #8b008b)", bonus: 1.1 },
+            { name: "Туманность Ориона", bg: "linear-gradient(135deg, #000428, #004e92)", bonus: 1.2 }
+        ];
 
         // Таланты
         let talents = {
@@ -308,7 +460,17 @@
             { name: "Ледяной", gradient: "linear-gradient(145deg, #00ffff, #00aaff)", animation: "glow" },
             { name: "Пламя", gradient: "linear-gradient(145deg, #ff3300, #ff9900)", animation: "pulse" },
             { name: "Зелёный", gradient: "linear-gradient(145deg, #33cc33, #99ff33)", animation: "spin" },
-            { name: "Фиолетовый", gradient: "linear-gradient(145deg, #cc00ff, #6600ff)", animation: "glow pulse" }
+            { name: "Фиолетовый", gradient: "linear-gradient(145deg, #cc00ff, #6600ff)", animation: "glow pulse" },
+            { name: "Золотой", gradient: "linear-gradient(145deg, gold, orange)", animation: "pulse" }, // 1 место
+            { name: "Серебряный", gradient: "linear-gradient(145deg, silver, lightgray)", animation: "glow" }, // 2 место
+            { name: "Бронзовый", gradient: "linear-gradient(145deg, #cd7f32, #a67b5b)", animation: "glow" }, // 3 место
+            { name: "Космический", gradient: "linear-gradient(145deg, #000000, #4b6cb7)", animation: "spin" } // Сезонный
+        ];
+
+        // Сезоны
+        const seasons = [
+            { name: "Космическая Охота", duration: 7, start: new Date("2025-11-15"), active: false },
+            { name: "Галактические Гонки", duration: 7, start: new Date("2025-11-22"), active: false }
         ];
 
         // Создаём звуки
@@ -327,6 +489,7 @@
                 multiplier = saved.multiplier || 1;
                 talentPoints = saved.talentPoints || 0;
                 currentSkin = saved.currentSkin || 0;
+                currentGalaxy = saved.currentGalaxy || 0;
                 quests = saved.quests || quests;
                 talents = saved.talents || talents;
                 unlocked = new Set(saved.unlocked || []);
@@ -343,12 +506,23 @@
                 updateQuestsDisplay();
                 updateTalentTree();
                 updateRandomQuest();
+                applyGalaxy();
             }
 
             // Проверяем Telegram WebApp
             if (window.Telegram && window.Telegram.WebApp) {
                 document.getElementById("send-to-chat-btn").style.display = "inline-block";
+                document.getElementById("leaderboard-btn").style.display = "inline-block";
+                window.Telegram.WebApp.onEvent("dataReceive", (eventData) => {
+                    if (eventData.data.startsWith("leaderboard:")) {
+                        const data = JSON.parse(eventData.data.replace("leaderboard:", ""));
+                        showLeaderboard(data);
+                    }
+                });
             }
+
+            // Проверяем сезон
+            checkSeason();
         };
 
         // Применить скин
@@ -357,6 +531,36 @@
             const button = document.getElementById("clicker");
             button.style.background = skin.gradient;
             button.style.animation = skin.animation ? `${skin.animation} 2s infinite` : "none";
+        }
+
+        // Применить галактику
+        function applyGalaxy() {
+            const galaxy = galaxies[currentGalaxy];
+            document.body.style.background = galaxy.bg;
+            showAchievement(`🌌 Вы в галактике: ${galaxy.name}!`);
+        }
+
+        // Проверка сезона
+        function checkSeason() {
+            const today = new Date();
+            for (let i = 0; i < seasons.length; i++) {
+                const start = new Date(seasons[i].start);
+                const end = new Date(start);
+                end.setDate(start.getDate() + seasons[i].duration);
+
+                if (today >= start && today < end) {
+                    seasons[i].active = true;
+                    document.getElementById("season").style.display = "block";
+                    showAchievement(`🎉 Сезон: ${seasons[i].name} активен!`);
+                    if (currentSkin < 8) {
+                        currentSkin = 8; // Сезонный скин
+                        applySkin();
+                        showAchievement("🎁 Сезонный скин разблокирован!");
+                    }
+                    return;
+                }
+            }
+            document.getElementById("season").style.display = "none";
         }
 
         // Проверка ежедневной награды
@@ -592,7 +796,24 @@
                     talentPoints++;
                     document.getElementById("talentPoints").innerText = `Очки талантов: ${talentPoints}`;
                 }
+
+                // Разблокировка галактики за уровень
+                if (level % 10 === 0 && currentGalaxy < galaxies.length - 1) {
+                    currentGalaxy++;
+                    applyGalaxy();
+                    showAchievement(`Новая галактика разблокирована: ${galaxies[currentGalaxy].name}!`);
+                }
             }
+        }
+
+        // Переключить галактику
+        function switchGalaxy() {
+            if (currentGalaxy < galaxies.length - 1) {
+                currentGalaxy++;
+            } else {
+                currentGalaxy = 0;
+            }
+            applyGalaxy();
         }
 
         // Покупка таланта
@@ -663,6 +884,191 @@
             }
         }
 
+        // Запросить leaderboard (фейковый)
+        function requestLeaderboard() {
+            if (window.Telegram && window.Telegram.WebApp) {
+                const fakeLeaderboard = [
+                    { userId: 111111111, username: "Player1", score: 10000 },
+                    { userId: 222222222, username: "Player2", score: 9500 },
+                    { userId: 333333333, username: "Player3", score: 9000 },
+                    { userId: 444444444, username: "Player4", score: 8500 },
+                    { userId: 555555555, username: "Player5", score: 8000 }
+                ];
+
+                const webApp = window.Telegram.WebApp;
+                const user = webApp.initDataUnsafe?.user;
+                if (user && !fakeLeaderboard.some(p => p.userId === user.id)) {
+                    fakeLeaderboard.push({ userId: user.id, username: user.username || `ID: ${user.id}`, score: count });
+                    fakeLeaderboard.sort((a, b) => b.score - a.score);
+                    if (fakeLeaderboard.length > 5) {
+                        fakeLeaderboard.length = 5;
+                    }
+                }
+
+                webApp.sendData("leaderboard:" + JSON.stringify(fakeLeaderboard));
+            } else {
+                showAchievement("Доступно только в Telegram Mini App.");
+            }
+        }
+
+        // Показать leaderboard
+        function showLeaderboard(data) {
+            const list = document.getElementById("leaderboard-list");
+            list.innerHTML = "";
+
+            data.forEach((entry, index) => {
+                const div = document.createElement("div");
+                div.innerText = `#${index + 1} — ${entry.username || `ID: ${entry.userId}`} — ${entry.score} очков`;
+                list.appendChild(div);
+
+                if (entry.userId === window.Telegram.WebApp?.initDataUnsafe?.user?.id) {
+                    if (index === 0) {
+                        if (currentSkin < 5) {
+                            currentSkin = 5;
+                            applySkin();
+                            showAchievement("🏆 Вы в 1-х в рейтинге! Новый скин разблокирован: Золотой!");
+                        }
+                    } else if (index === 1) {
+                        if (currentSkin < 6) {
+                            currentSkin = 6;
+                            applySkin();
+                            showAchievement("🥈 Вы в топ-2! Новый скин разблокирован: Серебряный!");
+                        }
+                    } else if (index === 2) {
+                        if (currentSkin < 7) {
+                            currentSkin = 7;
+                            applySkin();
+                            showAchievement("🥉 Вы в топ-3! Новый скин разблокирован: Бронзовый!");
+                        }
+                    }
+                }
+            });
+
+            document.getElementById("leaderboard").style.display = "block";
+        }
+
+        // Открыть рулетку
+        function openWheel() {
+            document.getElementById("wheel-container").style.display = "block";
+        }
+
+        // Крутить рулетку
+        function spinWheel() {
+            const today = new Date().toDateString();
+            const lastSpin = localStorage.getItem('lastSpin');
+            if (lastSpin === today) {
+                showAchievement("Рулетка доступна раз в день!");
+                return;
+            }
+
+            const wheel = document.getElementById("wheel");
+            const spinValue = Math.floor(Math.random() * 360) + 3600; // 10 оборотов
+            wheel.style.transform = `rotate(${spinValue}deg)`;
+
+            setTimeout(() => {
+                const rewards = [
+                    { type: "points", amount: 200, text: "+200 очков!" },
+                    { type: "multiplier", amount: 2, duration: 30, text: "x2 на 30 сек!" },
+                    { type: "skin", amount: 5, text: "Новый скин!" },
+                    { type: "galaxy", amount: 1, text: "Новая галактика!" }
+                ];
+                const reward = rewards[Math.floor(Math.random() * rewards.length)];
+
+                if (reward.type === "points") {
+                    count += reward.amount;
+                    document.getElementById("counter").innerText = count;
+                } else if (reward.type === "multiplier") {
+                    addBuff("multiplier", reward.amount, reward.duration);
+                } else if (reward.type === "skin" && currentSkin < 5) {
+                    currentSkin = 5;
+                    applySkin();
+                } else if (reward.type === "galaxy" && currentGalaxy < galaxies.length - 1) {
+                    currentGalaxy++;
+                    applyGalaxy();
+                }
+
+                showAchievement(`🎁 Рулетка: ${reward.text}`);
+                localStorage.setItem('lastSpin', today);
+            }, 3000);
+        }
+
+        // Открыть мини-игру
+        function openMinigame() {
+            document.getElementById("minigame-btn").style.display = "none";
+            setTimeout(() => {
+                document.getElementById("minigame-btn").style.display = "inline-block";
+            }, 5000);
+        }
+
+        // Начать мини-игру
+        function startMinigame(type) {
+            if (type === "timer") {
+                document.getElementById("minigame-timer").style.display = "block";
+                let timeLeft = 3;
+                document.getElementById("time-left").innerText = timeLeft;
+                const timer = setInterval(() => {
+                    timeLeft--;
+                    document.getElementById("time-left").innerText = timeLeft;
+                    if (timeLeft <= 0) {
+                        clearInterval(timer);
+                        document.getElementById("minigame-timer").style.display = "none";
+                        showAchievement("⏱️ Время вышло!");
+                    }
+                }, 1000);
+            } else if (type === "coins") {
+                document.getElementById("minigame-coins").style.display = "block";
+                document.getElementById("coins-collected").innerText = 0;
+                const coinArea = document.getElementById("coin-area");
+                coinArea.innerHTML = "";
+                for (let i = 0; i < 10; i++) {
+                    const coin = document.createElement("div");
+                    coin.classList.add("coin");
+                    coin.innerText = "🪙";
+                    coin.style.left = Math.random() * 80 + 10 + "%";
+                    coin.style.top = Math.random() * 80 + 10 + "%";
+                    coin.onclick = () => {
+                        coin.remove();
+                        let collected = parseInt(document.getElementById("coins-collected").innerText);
+                        collected++;
+                        document.getElementById("coins-collected").innerText = collected;
+                        if (collected >= 10) {
+                            count += 500;
+                            document.getElementById("counter").innerText = count;
+                            document.getElementById("minigame-coins").style.display = "none";
+                            showAchievement("🪙 Мини-игра пройдена! +500 очков!");
+                        }
+                    };
+                    coinArea.appendChild(coin);
+                }
+            }
+        }
+
+        // Клик по таймеру
+        function clickTimer() {
+            const timer = document.getElementById("timer");
+            if (timer.classList.contains("green")) {
+                count += 100;
+                document.getElementById("counter").innerText = count;
+                document.getElementById("minigame-timer").style.display = "none";
+                showAchievement("⏱️ Успешно! +100 очков!");
+            } else {
+                document.getElementById("minigame-timer").style.display = "none";
+                showAchievement("⏱️ Промахнулся!");
+            }
+        }
+
+        // Анимация таймера
+        setInterval(() => {
+            const timer = document.getElementById("timer");
+            if (timer) {
+                if (Math.random() > 0.5) {
+                    timer.classList.add("green");
+                } else {
+                    timer.classList.remove("green");
+                }
+            }
+        }, 500);
+
         // Сохранение прогресса
         function saveGame() {
             localStorage.setItem('clickerSave', JSON.stringify({
@@ -673,6 +1079,7 @@
                 multiplier: multiplier,
                 talentPoints: talentPoints,
                 currentSkin: currentSkin,
+                currentGalaxy: currentGalaxy,
                 quests: quests,
                 talents: talents,
                 unlocked: Array.from(unlocked),
@@ -693,6 +1100,9 @@
             buffs.forEach(buff => {
                 if (buff.type === "click") clickValue += buff.amount;
             });
+
+            // Применяем бонус галактики
+            clickValue *= galaxies[currentGalaxy].bonus;
 
             count += clickValue * multiplier;
             document.getElementById("counter").innerText = count;
@@ -733,7 +1143,7 @@
             const button = document.getElementById("clicker");
             const effect = document.createElement("div");
             effect.classList.add("click-effect");
-            effect.innerText = `+${perClick.toFixed(2)}`;
+            effect.innerText = `+${(perClick * galaxies[currentGalaxy].bonus).toFixed(2)}`;
             effect.style.left = Math.random() * 80 + 10 + "%";
             effect.style.top = "50%";
             document.body.appendChild(effect);
@@ -853,6 +1263,9 @@
             buffs.forEach(buff => {
                 if (buff.type === "auto") autoValue += buff.amount;
             });
+
+            // Применяем бонус галактики
+            autoValue *= galaxies[currentGalaxy].bonus;
 
             if (autoValue > 0) {
                 count += autoValue * multiplier;
