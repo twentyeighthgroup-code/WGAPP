@@ -2,2554 +2,873 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Clicker Adventure: Journey to the Stars</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Star Clicker: Galaxy Evolution</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary: #00e5ff;
+            --secondary: #7000ff;
+            --success: #00ff9d;
+            --warning: #ffaa00;
+            --danger: #ff0055;
+            --bg-dark: #0a0a12;
+            --glass: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.15);
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
         body {
-            font-family: 'Comic Sans MS', sans-serif;
-            text-align: center;
-            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            font-family: 'Roboto', sans-serif;
+            background: radial-gradient(circle at center, #1a1a2e 0%, #000000 100%);
             color: #fff;
-            padding: 20px;
             margin: 0;
-            min-height: 100vh;
-            transition: background 0.5s;
-        }
-
-        h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            text-shadow: 0 0 10px #00bfff;
-        }
-
-        #counter {
-            font-size: 48px;
-            margin: 20px;
-            text-shadow: 0 0 15px #00bfff;
-        }
-
-        #level {
-            font-size: 24px;
-            color: #ffcc00;
-            margin-top: 10px;
-        }
-
-        #talentPoints {
-            font-size: 20px;
-            color: #ff9900;
-            margin-top: 5px;
-        }
-
-        #clicker {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            border: none;
-            font-size: 30px;
-            cursor: pointer;
-            box-shadow: 0 0 30px rgba(255, 204, 0, 0.7);
-            transition: transform 0.1s ease;
-            margin: 20px auto;
-            display: block;
-            position: relative;
-        }
-
-        #clicker:active {
-            transform: scale(0.9);
-        }
-
-        .shop-item {
-            background: rgba(255, 255, 255, 0.15);
-            padding: 15px;
-            margin: 10px;
-            border-radius: 10px;
-            display: inline-block;
-            width: 220px;
-            transition: background 0.3s;
-        }
-
-        .shop-item:hover {
-            background: rgba(255, 255, 255, 0.25);
-        }
-
-        button {
-            background: linear-gradient(to right, #4CAF50, #8BC34A);
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            cursor: pointer;
-            font-size: 16px;
-            border-radius: 5px;
-            margin-top: 8px;
-        }
-
-        button:disabled {
-            background: #888;
-            cursor: not-allowed;
-        }
-
-        .talent-tree-container {
+            height: 100vh;
+            overflow: hidden; /* Запрет скролла всей страницы */
             display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 30px 0;
-            position: relative;
-        }
-
-        .talent-tree {
-            display: flex;
-            justify-content: center;
-            gap: 80px;
-            position: relative;
-            z-index: 2;
-        }
-
-        .talent-node {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background: rgba(100, 100, 255, 0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
             flex-direction: column;
+        }
+
+        /* --- Фоны Галактик --- */
+        .bg-milkyway { background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); }
+        .bg-andromeda { background: linear-gradient(135deg, #2c003e, #570a57, #1a0b2e); }
+        .bg-orion { background: linear-gradient(135deg, #000428, #004e92, #000000); }
+
+        /* --- Верхняя панель (Ресурсы) --- */
+        header {
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--glass-border);
+            z-index: 10;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        .resource-group {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .main-counter {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            color: var(--primary);
+            text-shadow: 0 0 10px var(--primary);
+        }
+
+        .sub-stats {
+            font-size: 0.8rem;
+            color: #aaa;
+            display: flex;
+            gap: 10px;
+        }
+
+        /* --- Основная область (Кликер) --- */
+        #game-area {
+            flex: 1;
             position: relative;
-            transition: background 0.3s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
         }
 
-        .talent-node.active {
-            background: rgba(0, 255, 0, 0.5);
-        }
-
-        .talent-node.locked {
-            background: rgba(100, 100, 100, 0.3);
-            cursor: not-allowed;
-        }
-
-        .talent-node button {
-            padding: 3px 8px;
-            font-size: 12px;
-            margin-top: 5px;
-        }
-
-        .achievement {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            color: gold;
-            padding: 10px;
-            border-radius: 10px;
-            display: none;
-            z-index: 1000;
-        }
-
-        .daily-reward {
-            background: rgba(0, 100, 0, 0.8);
-            color: white;
-            padding: 15px;
-            margin: 20px;
-            border-radius: 10px;
-            display: none;
-        }
-
-        .buffs {
-            margin-top: 20px;
-            color: #aaffaa;
-        }
-
-        .quests {
-            margin-top: 20px;
-            color: #aaffaa;
-        }
-
-        .leaderboard {
-            background: rgba(0, 100, 100, 0.8);
-            color: white;
-            padding: 15px;
-            margin: 20px;
-            border-radius: 10px;
-            display: none;
-        }
-
-        .click-effect {
-            position: absolute;
-            font-size: 20px;
-            color: gold;
-            pointer-events: none;
-            animation: floatUp 1s forwards;
-        }
-
-        /* Анимация таланта */
-        @keyframes glowPulse {
-            0% { transform: scale(1); box-shadow: 0 0 5px #fff; }
-            50% { transform: scale(1.2); box-shadow: 0 0 20px #00ff00; }
-            100% { transform: scale(1); box-shadow: 0 0 5px #fff; }
-        }
-
-        .talent-node.pulse {
-            animation: glowPulse 0.5s ease;
-        }
-
-        /* Анимации для скинов */
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        @keyframes glow {
-            0% { box-shadow: 0 0 10px #fff; }
-            50% { box-shadow: 0 0 30px #00bfff; }
-            100% { box-shadow: 0 0 10px #fff; }
-        }
-
-        @keyframes floatUp {
-            0% { opacity: 1; transform: translateY(0); }
-            100% { opacity: 0; transform: translateY(-50px); }
-        }
-
-        /* Рулетка */
-        .wheel {
+        #main-clicker {
             width: 200px;
             height: 200px;
             border-radius: 50%;
-            background: conic-gradient(
-                #ff0000 0deg 60deg,
-                #00ff00 60deg 120deg,
-                #0000ff 120deg 180deg,
-                #ffff00 180deg 240deg,
-                #ff00ff 240deg 300deg,
-                #00ffff 300deg 360deg
-            );
-            margin: 20px auto;
-            position: relative;
-            transition: transform 3s cubic-bezier(0.17, 0.67, 0.83, 0.67);
+            background: radial-gradient(circle at 30% 30%, #ffd700, #ff8c00);
+            box-shadow: 0 0 50px rgba(255, 140, 0, 0.4), inset -20px -20px 40px rgba(0,0,0,0.5);
             cursor: pointer;
+            transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            z-index: 5;
+            border: none;
+            outline: none;
         }
 
-        .wheel-pointer {
+        #main-clicker:active { transform: scale(0.92); }
+
+        /* Эффекты клика (частицы) */
+        .click-particle {
             position: absolute;
-            top: -10px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 0;
-            height: 0;
-            border-left: 10px solid transparent;
-            border-right: 10px solid transparent;
-            border-top: 20px solid red;
-            z-index: 10;
+            pointer-events: none;
+            color: #fff;
+            font-weight: bold;
+            font-size: 1.2rem;
+            animation: floatUp 1s forwards;
+            text-shadow: 0 0 5px rgba(0,0,0,0.8);
+            z-index: 100;
         }
 
-        .wheel-inner {
-            width: 180px;
-            height: 180px;
-            border-radius: 50%;
-            background: #222;
-            position: absolute;
-            top: 10px;
-            left: 10px;
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-80px) scale(1.2); opacity: 0; }
+        }
+
+        /* --- Нижняя панель (Меню/Вкладки) --- */
+        .tab-nav {
+            background: #111;
             display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            border-top: 1px solid #333;
+            z-index: 20;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            color: #666;
+            font-size: 0.8rem;
+            display: flex;
+            flex-direction: column;
             align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 14px;
+            cursor: pointer;
+            transition: 0.3s;
         }
 
-        .wheel-container {
-            display: none;
-            margin: 20px;
-        }
+        .tab-btn span { font-size: 1.5rem; margin-bottom: 5px; }
+        .tab-btn.active { color: var(--primary); text-shadow: 0 0 10px rgba(0, 229, 255, 0.5); }
 
-        /* Сезон */
-        .season {
-            background: rgba(255, 100, 0, 0.3);
-            padding: 10px;
-            margin: 10px;
-            border-radius: 10px;
+        /* --- Контент вкладок (Модальные окна/Панели) --- */
+        .tab-content {
             display: none;
-        }
-
-        /* Мини-игры */
-        .minigame {
-            display: none;
-            margin: 20px;
+            position: absolute;
+            top: 70px; /* Height of header */
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(10, 10, 18, 0.95);
+            backdrop-filter: blur(15px);
+            overflow-y: auto;
             padding: 20px;
-            background: rgba(0, 100, 100, 0.5);
-            border-radius: 10px;
+            z-index: 15;
+            animation: slideUp 0.3s ease;
         }
 
-        .click-timer {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            background: #f00;
-            margin: 20px auto;
-            position: relative;
-            transition: background 0.1s;
+        .tab-content.active { display: block; }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
         }
 
-        .click-timer.green {
-            background: #0f0;
+        /* --- Карточки улучшений --- */
+        .upgrade-card {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: 0.2s;
         }
 
-        .coin {
-            position: absolute;
-            width: 30px;
-            height: 30px;
-            background: gold;
-            border-radius: 50%;
+        .upgrade-card:active { transform: scale(0.98); background: rgba(255,255,255,0.12); }
+
+        .upgrade-info h4 { margin: 0 0 5px 0; color: #fff; }
+        .upgrade-info p { margin: 0; font-size: 0.85rem; color: #ccc; }
+        
+        .btn-buy {
+            background: linear-gradient(45deg, var(--primary), #00aaff);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            color: #000;
+            font-weight: bold;
             cursor: pointer;
+        }
+        .btn-buy:disabled { background: #444; color: #888; cursor: not-allowed; }
+
+        /* --- Дерево талантов --- */
+        .talent-tree-wrapper {
+            display: flex;
+            justify-content: center;
+            position: relative;
+            margin: 40px 0;
+        }
+        
+        .talent-node {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #333;
+            border: 2px solid #555;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 14px;
-            color: black;
+            position: relative;
+            z-index: 2;
+            transition: 0.3s;
+        }
+        
+        .talent-node.active { background: var(--success); border-color: #fff; box-shadow: 0 0 15px var(--success); }
+        .talent-line { position: absolute; height: 2px; background: #555; top: 50%; z-index: 1; width: 100%; }
+
+        /* --- Уведомления (Toast) --- */
+        .toast {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border-left: 4px solid var(--primary);
+            padding: 15px;
+            border-radius: 5px;
+            z-index: 1000;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: 0.3s;
+        }
+        .toast.show { opacity: 1; transform: translateX(0); }
+
+        /* --- Секции мини-игр --- */
+        .arcade-menu { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .arcade-btn {
+            background: var(--glass);
+            border: 1px solid var(--primary);
+            padding: 20px;
+            text-align: center;
+            border-radius: 10px;
+            color: var(--primary);
+            font-family: 'Orbitron';
         }
 
-        /* Умения */
-        .skills {
-            margin-top: 20px;
-            color: #aaffaa;
+        /* --- Всплывающее окно мини-игры --- */
+        .minigame-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            z-index: 200;
+            display: none;
+            flex-direction: column;
         }
-
-        .skill {
-            background: rgba(100, 100, 255, 0.2);
+        .minigame-header {
             padding: 10px;
-            margin: 10px;
-            border-radius: 8px;
-            display: inline-block;
-            width: 200px;
+            background: #222;
+            display: flex;
+            justify-content: space-between;
         }
-
-        .skill button {
-            padding: 5px 10px;
-            font-size: 14px;
-        }
-
-        /* Сюжет */
-        .story {
-            background: rgba(255, 200, 0, 0.2);
-            padding: 15px;
-            margin: 20px;
-            border-radius: 10px;
-            display: none;
-        }
-
-        .story-btn {
-            margin-top: 10px;
-        }
-
-        /* Сражение */
-        .battle {
-            background: rgba(255, 0, 0, 0.2);
-            padding: 15px;
-            margin: 20px;
-            border-radius: 10px;
-            display: none;
-        }
-
-        /* Поймай астероид */
-        .asteroid {
-            position: absolute;
-            width: 30px;
-            height: 30px;
-            background: #808080;
-            border-radius: 50%;
-            cursor: pointer;
-        }
-
-        /* Клик по цели */
-        .target {
-            position: absolute;
-            width: 50px;
-            height: 50px;
-            background: #ff0000;
-            border-radius: 50%;
-            cursor: pointer;
-        }
-
-        /* Танк */
-        .tank-game {
-            width: 100%;
-            height: 300px;
-            background: #228B22;
+        .minigame-canvas-container {
+            flex: 1;
             position: relative;
+            background: #111;
             overflow: hidden;
         }
 
-        .tank {
-            position: absolute;
-            bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 50px;
-            height: 30px;
-            background: #0000ff;
-        }
-
-        .tank-bullet {
-            position: absolute;
-            width: 5px;
-            height: 10px;
-            background: #ffff00;
-        }
-
-        .tank-enemy {
-            position: absolute;
-            width: 40px;
-            height: 40px;
-            background: #ff0000;
-        }
-
-        /* Битва */
-        .battle-game {
-            width: 100%;
-            height: 300px;
-            background: #8B0000;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .player {
-            position: absolute;
-            bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 50px;
-            height: 50px;
-            background: #00ff00;
-        }
-
-        .enemy {
-            position: absolute;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 50px;
-            height: 50px;
-            background: #ff0000;
-        }
-
-        .bullet {
-            position: absolute;
-            width: 5px;
-            height: 10px;
-            background: #ffff00;
-        }
-
-        /* Ракета */
-        .rocket-game {
-            width: 100%;
-            height: 300px;
-            background: #000000;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .rocket {
-            position: absolute;
-            bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 30px;
-            height: 60px;
-            background: #ffffff;
-        }
-
-        .obstacle {
-            position: absolute;
-            width: 40px;
-            height: 40px;
-            background: #808080;
-        }
-
-        /* Лабиринт */
-        .maze-game {
-            width: 300px;
-            height: 300px;
-            background: #ffffff;
-            position: relative;
-            margin: 0 auto;
-            border: 2px solid #000000;
-        }
-
-        .maze-player {
+        /* Баффы */
+        .buff-container {
             position: absolute;
             top: 10px;
             left: 10px;
-            width: 20px;
-            height: 20px;
-            background: #00ff00;
+            display: flex;
+            gap: 5px;
         }
-
-        .maze-wall {
-            position: absolute;
-            background: #000000;
-        }
-
-        .maze-end {
-            position: absolute;
-            top: 270px;
-            left: 270px;
-            width: 20px;
-            height: 20px;
-            background: #ffff00;
-        }
-
-        /* Пинг-понг */
-        .ping-pong-game {
-            width: 100%;
-            height: 300px;
-            background: #008000;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .paddle {
-            position: absolute;
-            width: 10px;
-            height: 60px;
-            background: #ffffff;
-        }
-
-        .paddle-left {
-            left: 10px;
-            top: 120px;
-        }
-
-        .paddle-right {
-            right: 10px;
-            top: 120px;
-        }
-
-        .ball {
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            background: #ffffff;
-            border-radius: 50%;
-        }
-
-        /* Шахта */
-        .mine-game {
-            width: 100%;
-            height: 300px;
-            background: #8B4513;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .miner {
-            position: absolute;
-            bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%);
+        .buff-icon {
             width: 30px;
             height: 30px;
-            background: #ffffff;
-        }
-
-        .ore {
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            background: #ffd700;
-        }
-
-        .rock {
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            background: #808080;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid var(--warning);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
         }
     </style>
 </head>
 <body>
 
-    <h1>🚀 Clicker Adventure: Journey to the Stars</h1>
-    <div id="counter">0</div>
-    <div id="level">Уровень: 1</div>
-    <div id="talentPoints">Очки талантов: 0</div>
-    <button id="clicker" onclick="clickCounter()">💥</button>
+    <!-- Звуковые эффекты (короткие синтезированные или пустые для примера) -->
+    <!-- В реальном проекте замените src на файлы -->
+    <audio id="sfx-click" src=""></audio> 
+    <audio id="sfx-buy" src=""></audio>
+    <audio id="sfx-level" src=""></audio>
 
-    <div id="daily-reward" class="daily-reward">
-        <p>🎁 Ежедневная награда: <span id="daily-text">+100 очков!</span></p>
-        <button onclick="claimDaily()">Забрать</button>
-    </div>
+    <!-- Уведомления -->
+    <div id="toast-container" class="toast">Уведомление</div>
 
-    <div class="buffs">
-        <p>Активные баффы:</p>
-        <div id="active-buffs"></div>
-    </div>
-
-    <div class="quests">
-        <p>🎯 Квесты:</p>
-        <div id="active-quests"></div>
-    </div>
-
-    <h2>🧠 Визуальное дерево талантов</h2>
-    <div class="talent-tree-container">
-        <svg id="talent-connections" width="300" height="100" style="position: absolute; z-index: 1;"></svg>
-        <div class="talent-tree">
-            <div class="talent-node" id="talent-click">
-                <p>💥 Клик</p>
-                <button onclick="buyTalent('clickBonus')">Купить</button>
-            </div>
-            <div class="talent-node" id="talent-auto">
-                <p>🤖 Авто</p>
-                <button onclick="buyTalent('autoBonus')">Купить</button>
-            </div>
-            <div class="talent-node" id="talent-level">
-                <p>⭐ Уровень</p>
-                <button onclick="buyTalent('levelBonus')">Купить</button>
+    <!-- Хедер -->
+    <header>
+        <div class="resource-group">
+            <div class="sub-stats">Ур. <span id="level-display">1</span></div>
+            <div class="main-counter" id="score-display">0</div>
+            <div class="sub-stats">
+                <span>⚡ <span id="per-click-display">1</span>/клик</span>
+                <span>🤖 <span id="auto-click-display">0</span>/сек</span>
             </div>
         </div>
-    </div>
-
-    <div class="skills">
-        <p>🧠 Умения:</p>
-        <div class="skill">
-            <p>💥 +10% к клику</p>
-            <button onclick="buySkill('clickBonus')">Улучшить (1 очко)</button>
+        <div style="text-align: right;">
+            <div class="sub-stats" style="color: var(--warning)">⭐ Таланты: <span id="talent-points-display">0</span></div>
         </div>
-        <div class="skill">
-            <p>🤖 +0.5 к автоклику</p>
-            <button onclick="buySkill('autoBonus')">Улучшить (1 очко)</button>
-        </div>
-        <div class="skill">
-            <p>⚡ x2 на 10 сек</p>
-            <button onclick="useSkill('multiplier')">Активировать (3 очка)</button>
-        </div>
-    </div>
+    </header>
 
-    <div id="story" class="story">
-        <p>🌌 Сюжет: Вы отправляетесь в космическое путешествие, чтобы спасти Землю от темной материи.</p>
-        <p>📍 Локация: Земля</p>
-        <p>👾 Враг: Астероид</p>
-        <button class="story-btn" onclick="nextStory()">Продолжить</button>
-    </div>
-
-    <div id="battle" class="battle">
-        <p>⚔️ Сражение с: <span id="battle-enemy">Астероид</span></p>
-        <p>Кликов осталось: <span id="clicks-left">10</span></p>
-        <p>Время: <span id="time-left-battle">10</span> сек</p>
-        <button onclick="startBattle()">Начать сражение</button>
-    </div>
-
-    <!-- Новые мини-игры -->
-    <div id="catch-asteroid" class="minigame">
-        <h3>☄️ Поймай астероид!</h3>
-        <div id="asteroid-field" style="width: 100%; height: 300px; background: #000; position: relative; overflow: hidden;"></div>
-        <button onclick="startCatchAsteroid()">Начать</button>
-    </div>
-
-    <div id="click-target" class="minigame">
-        <h3>🎯 Клик по цели!</h3>
-        <div id="target-field" style="width: 100%; height: 300px; background: #000; position: relative; overflow: hidden;"></div>
-        <button onclick="startClickTarget()">Начать</button>
-    </div>
-
-    <div id="tank-game" class="minigame">
-        <h3>🔫 Танк!</h3>
-        <div id="tank-field" class="tank-game"></div>
-        <button onclick="startTankGame()">Начать</button>
-    </div>
-
-    <div id="battle-game" class="minigame">
-        <h3>⚔️ Битва!</h3>
-        <div id="battle-field" class="battle-game"></div>
-        <button onclick="startBattleGame()">Начать</button>
-    </div>
-
-    <div id="rocket-game" class="minigame">
-        <h3>🚀 Ракета!</h3>
-        <div id="rocket-field" class="rocket-game"></div>
-        <button onclick="startRocketGame()">Начать</button>
-    </div>
-
-    <div id="maze-game" class="minigame">
-        <h3>🧩 Лабиринт!</h3>
-        <div id="maze-field" class="maze-game"></div>
-        <button onclick="startMazeGame()">Начать</button>
-    </div>
-
-    <div id="ping-pong-game" class="minigame">
-        <h3>🏓 Пинг-понг!</h3>
-        <div id="ping-pong-field" class="ping-pong-game"></div>
-        <button onclick="startPingPongGame()">Начать</button>
-    </div>
-
-    <div id="mine-game" class="minigame">
-        <h3>⛏️ Шахта!</h3>
-        <div id="mine-field" class="mine-game"></div>
-        <button onclick="startMineGame()">Начать</button>
-    </div>
-
-    <button id="share-btn" onclick="shareResult()">📤 Поделиться результатом</button>
-    <button id="send-to-chat-btn" onclick="sendResultToChat()" style="display: none;">📤 Отправить в чат</button>
-    <button id="leaderboard-btn" onclick="requestLeaderboard()" style="display: none;">🏆 Таблица лидеров</button>
-    <button id="galaxy-btn" onclick="switchGalaxy()">🌌 Переключить галактику</button>
-    <button id="wheel-btn" onclick="openWheel()">🎡 Рулетка</button>
-    <button id="season-btn" onclick="checkSeason()">🎁 Сезон</button>
-    <button id="minigame-btn" onclick="openMinigame()">🎮 Мини-игра</button>
-    <button id="story-btn" onclick="openStory()">📜 История</button>
-
-    <div id="minigame-timer" class="minigame">
-        <h3>⏱️ Кликни вовремя!</h3>
-        <div class="click-timer" id="timer" onclick="clickTimer()"></div>
-        <p>Осталось: <span id="time-left">3</span> сек</p>
-    </div>
-
-    <div id="minigame-coins" class="minigame">
-        <h3>🪙 Собери монеты!</h3>
-        <p>Собрано: <span id="coins-collected">0</span>/10</p>
-        <div id="coin-area"></div>
-    </div>
-
-    <div id="wheel-container" class="wheel-container">
-        <div class="wheel-pointer"></div>
-        <div class="wheel" id="wheel">
-            <div class="wheel-inner">Крутить!</div>
-        </div>
-        <button onclick="spinWheel()">Крутить!</button>
-    </div>
-
-    <div id="leaderboard" class="leaderboard">
-        <h3>🏆 Таблица лидеров</h3>
-        <div id="leaderboard-list"></div>
-    </div>
-
-    <h2>🚀 Улучшения</h2>
-    <div class="shop">
-        <div class="shop-item">
-            <p>💥 Урон клика: <span id="perClick">1</span></p>
-            <p>Цена: <span id="cost1">10</span></p>
-            <button onclick="buyUpgrade()">Купить</button>
-        </div>
-        <div class="shop-item">
-            <p>🤖 Автоклик: <span id="autoClick">0</span>/сек</p>
-            <p>Цена: <span id="cost2">50</span></p>
-            <button onclick="buyAutoclicker()">Купить</button>
-        </div>
-        <div class="shop-item">
-            <p>⭐ Бонус x2 за клик</p>
-            <p>Цена: <span id="cost3">200</span></p>
-            <button onclick="buyMultiplier()">Купить</button>
-        </div>
-        <div class="shop-item">
-            <p>💥 x1.5 за клик</p>
-            <p>Цена: <span id="cost4">300</span></p>
-            <button onclick="buyUpgradeX15()">Купить</button>
-        </div>
-        <div class="shop-item">
-            <p>🤖 +0.5 к автоклику</p>
-            <p>Цена: <span id="cost5">100</span></p>
-            <button onclick="buyAutoclickerPlus()">Купить</button>
-        </div>
-        <div class="shop-item">
-            <p>🛡️ Бонус к баффам +10%</p>
-            <p>Цена: <span id="cost6">400</span></p>
-            <button onclick="buyBuffBonus()">Купить</button>
-        </div>
-        <div class="shop-item">
-            <p>🤖 Автоклик x2</p>
-            <p>Цена: <span id="cost7">600</span></p>
-            <button onclick="buyAutoclickerX2()">Купить</button>
+    <!-- Основная зона игры -->
+    <div id="game-area">
+        <div class="buff-container" id="active-buffs"></div>
+        
+        <!-- Кнопка клика (Планета) -->
+        <button id="main-clicker" onclick="Game.click()"></button>
+        
+        <!-- Плавающие элементы истории/квестов -->
+        <div style="position: absolute; bottom: 20px; width: 100%; text-align: center; font-size: 0.9rem; color: #aaa; pointer-events: none;">
+            <span id="quest-display">🎯 Квест: Сделай 10 кликов</span>
         </div>
     </div>
 
-    <h2>🧠 Таланты</h2>
-    <div class="shop">
-        <div class="shop-item">
-            <p>💥 x1.2 за клик</p>
-            <p>Цена: <span id="cost8">50</span></p>
-            <button onclick="buyTalentX12()">Купить</button>
-        </div>
-        <div class="shop-item">
-            <p>🤖 +0.3 к автоклику</p>
-            <p>Цена: <span id="cost9">75</span></p>
-            <button onclick="buyTalentAuto03()">Купить</button>
-        </div>
-        <div class="shop-item">
-            <p>🛡️ Бонус к баффам +5%</p>
-            <p>Цена: <span id="cost10">150</span></p>
-            <button onclick="buyTalentBuff5()">Купить</button>
-        </div>
-        <div class="shop-item">
-            <p>🛡️ Щит (защита от вражеских баффов)</p>
-            <p>Цена: <span id="cost11">200</span></p>
-            <button onclick="buyTalentShield()">Купить</button>
-        </div>
-        <div class="shop-item">
-            <p>⭐ x1.1 к уровню</p>
-            <p>Цена: <span id="cost12">100</span></p>
-            <button onclick="buyTalentLevel11()">Купить</button>
-        </div>
-        <div class="shop-item">
-            <p>💥 Шанс x3 за клик</p>
-            <p>Цена: <span id="cost13">300</span></p>
-            <button onclick="buyTalentChanceX3()">Купить</button>
-        </div>
-        <div class="shop-item">
-            <p>💥 Шанс +10 за клик</p>
-            <p>Цена: <span id="cost14">250</span></p>
-            <button onclick="buyTalentChancePlus10()">Купить</button>
-        </div>
-        <div class="shop-item">
-            <p>🤖 Шанс +2 к автоклику</p>
-            <p>Цена: <span id="cost15">400</span></p>
-            <button onclick="buyTalentChanceAuto2()">Купить</button>
+    <!-- Вкладки (Контент) -->
+
+    <!-- 1. Магазин -->
+    <div id="tab-shop" class="tab-content">
+        <h2 style="color: var(--primary); font-family: 'Orbitron'">🚀 Верфь улучшений</h2>
+        <div id="shop-list">
+            <!-- Генерируется JS -->
         </div>
     </div>
 
-    <div id="achievement" class="achievement">Достижение: 100 кликов!</div>
+    <!-- 2. Таланты -->
+    <div id="tab-talents" class="tab-content">
+        <h2 style="color: var(--warning); font-family: 'Orbitron'">🧠 Нейросеть</h2>
+        <p>Очки талантов: <span id="tp-tab-display">0</span></p>
+        <div class="talent-tree-wrapper">
+            <div style="position:absolute; width: 200px; height: 2px; background: #555; top: 30px;"></div>
+            <div style="display:flex; justify-content:space-between; width: 250px;">
+                <div class="talent-node" id="t-click" onclick="Game.buyTalent('click')">💥</div>
+                <div class="talent-node" id="t-auto" onclick="Game.buyTalent('auto')">🤖</div>
+                <div class="talent-node" id="t-crit" onclick="Game.buyTalent('crit')">⚡</div>
+            </div>
+        </div>
+        <p style="text-align: center; font-size: 0.8rem; color: #888;">Нажми на иконку, чтобы изучить</p>
+    </div>
+
+    <!-- 3. Аркада (Мини-игры) -->
+    <div id="tab-arcade" class="tab-content">
+        <h2 style="color: var(--danger); font-family: 'Orbitron'">🎮 Голодек</h2>
+        <div class="arcade-menu">
+            <div class="arcade-btn" onclick="Minigames.start('asteroid')">
+                <h3>☄️ Астероиды</h3>
+                <p>Кликай, пока не упали!</p>
+            </div>
+            <div class="arcade-btn" onclick="Minigames.start('wheel')">
+                <h3>🎡 Рулетка</h3>
+                <p>Испытай удачу (Ежедневно)</p>
+            </div>
+            <div class="arcade-btn" onclick="Minigames.start('boss')">
+                <h3>👹 Рейд Босс</h3>
+                <p>Закликивание на время</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Профиль / Сюжет -->
+    <div id="tab-profile" class="tab-content">
+        <h2 style="color: var(--success); font-family: 'Orbitron'">👨‍🚀 Бортовой журнал</h2>
+        <div class="upgrade-card">
+            <div class="upgrade-info">
+                <h4>Текущая галактика</h4>
+                <p id="galaxy-name">Млечный путь</p>
+            </div>
+            <button class="btn-buy" onclick="Game.nextGalaxy()">Прыжок</button>
+        </div>
+        <div style="margin-top: 20px;">
+            <h3>Скины</h3>
+            <div id="skin-selector" style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px;">
+                <!-- JS -->
+            </div>
+        </div>
+        <div style="margin-top: 20px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 10px;">
+            <h4>Последние достижения:</h4>
+            <ul id="achievements-list" style="padding-left: 20px; font-size: 0.85rem; color: #ccc;"></ul>
+        </div>
+        <button onclick="Game.hardReset()" style="margin-top: 30px; background: #333; border: 1px solid #555; color: #888; width: 100%; padding: 10px;">Сброс прогресса</button>
+    </div>
+
+    <!-- Навигация -->
+    <nav class="tab-nav">
+        <button class="tab-btn" onclick="UI.openTab('shop')">
+            <span>🛒</span> Магазин
+        </button>
+        <button class="tab-btn" onclick="UI.openTab('talents')">
+            <span>🧠</span> Таланты
+        </button>
+        <button class="tab-btn active" onclick="UI.closeTabs()">
+            <span>🚀</span> Игра
+        </button>
+        <button class="tab-btn" onclick="UI.openTab('arcade')">
+            <span>🎮</span> Аркада
+        </button>
+        <button class="tab-btn" onclick="UI.openTab('profile')">
+            <span>👤</span> Профиль
+        </button>
+    </nav>
+
+    <!-- Модальное окно для мини-игр (Canvas) -->
+    <div id="minigame-layer" class="minigame-modal">
+        <div class="minigame-header">
+            <span id="minigame-title">Game</span>
+            <button onclick="Minigames.stop()" style="background:red; border:none; color:white; padding:5px 10px;">Закрыть</button>
+        </div>
+        <div class="minigame-canvas-container" id="mg-container">
+            <!-- Сюда инжектится игра -->
+        </div>
+    </div>
 
     <script>
-        let count = 0;
-        let level = 1;
-        let perClick = 1;
-        let autoClick = 0;
-        let multiplier = 1;
-        let talentPoints = 0;
-        let skillPoints = 0;
-        let achievements = [100, 500, 1000, 5000];
-        let unlocked = new Set();
-        let currentSkin = 0;
-        let currentGalaxy = 0;
+        /* --- CORE GAME LOGIC --- */
+        const Game = {
+            state: {
+                score: 0,
+                level: 1,
+                perClick: 1,
+                autoClick: 0,
+                talentPoints: 0,
+                clickMultiplier: 1,
+                galaxyIndex: 0,
+                skinIndex: 0,
+                upgrades: {
+                    u1: { count: 0, baseCost: 15, basePower: 1, name: "Улучшенный лазер", type: "click" },
+                    u2: { count: 0, baseCost: 50, basePower: 1, name: "Дроид-помощник", type: "auto" },
+                    u3: { count: 0, baseCost: 250, basePower: 5, name: "Плазменная пушка", type: "click" },
+                    u4: { count: 0, baseCost: 1000, basePower: 10, name: "Майнинг-ферма", type: "auto" },
+                    u5: { count: 0, baseCost: 5000, basePower: 50, name: "Квантовый бур", type: "click" }
+                },
+                talents: { click: 0, auto: 0, crit: 0 },
+                unlockedSkins: [0],
+                achievements: []
+            },
 
-        // Галактики
-        const galaxies = [
-            { name: "Млечный Путь", bg: "linear-gradient(135deg, #0f0c29, #302b63, #24243e)", bonus: 1 },
-            { name: "Андромеда", bg: "linear-gradient(135deg, #2c003e, #570a57, #8b008b)", bonus: 1.1 },
-            { name: "Туманность Ориона", bg: "linear-gradient(135deg, #000428, #004e92)", bonus: 1.2 }
-        ];
+            settings: {
+                galaxies: [
+                    { name: "Млечный Путь", color: "radial-gradient(circle at 30% 30%, #ffd700, #ff8c00)", mult: 1, req: 0 },
+                    { name: "Андромеда", color: "radial-gradient(circle at 30% 30%, #00ffff, #0000ff)", mult: 2, req: 50000 },
+                    { name: "Чёрная Дыра", color: "radial-gradient(circle at 30% 30%, #333, #000)", mult: 5, req: 1000000 }
+                ],
+                skins: [
+                    { name: "Стандарт", bg: "#ffd700" },
+                    { name: "Лед", bg: "#00ffff" },
+                    { name: "Лава", bg: "#ff3300" },
+                    { name: "Токсик", bg: "#00ff00" }
+                ]
+            },
 
-        // Умения
-        let skills = {
-            clickBonus: { level: 0, value: 0.1 },
-            autoBonus: { level: 0, value: 0.5 },
-            multiplier: { level: 0, value: 2, duration: 10 }
-        };
+            init() {
+                this.load();
+                UI.init();
+                this.gameLoop = setInterval(() => this.tick(), 1000);
+                this.saveLoop = setInterval(() => this.save(), 10000);
+                this.applyGalaxy();
+            },
 
-        // Сюжет
-        let story = {
-            location: "Земля",
-            enemy: "Астероид",
-            stage: 0,
-            requiredScore: 1000, // Сколько нужно очков для следующего этапа
-            path: null // "moon" или "mars"
-        };
-
-        // Таланты
-        let talents = {
-            clickBonus: { level: 0, value: 0.01 },
-            autoBonus: { level: 0, value: 0.5 },
-            levelBonus: { level: 0, value: 1.1 }
-        };
-
-        // Баффы
-        let buffs = [];
-
-        // Квесты
-        let quests = [
-            { id: 1, text: "Набери 100 очков", target: 100, progress: 0, reward: 50, completed: false },
-            { id: 2, text: "Сделай 20 кликов", target: 20, progress: 0, reward: 30, completed: false },
-            { id: 3, text: "Купи 3 улучшения", target: 3, progress: 0, reward: 40, completed: false }
-        ];
-
-        // Случайный квест
-        let randomQuest = null;
-        let lastRandomQuestTime = 0;
-
-        // Скины (с анимациями)
-        const skins = [
-            { name: "Стандарт", gradient: "linear-gradient(145deg, #ffcc00, #ff9800)", animation: "" },
-            { name: "Ледяной", gradient: "linear-gradient(145deg, #00ffff, #00aaff)", animation: "glow" },
-            { name: "Пламя", gradient: "linear-gradient(145deg, #ff3300, #ff9900)", animation: "pulse" },
-            { name: "Зелёный", gradient: "linear-gradient(145deg, #33cc33, #99ff33)", animation: "spin" },
-            { name: "Фиолетовый", gradient: "linear-gradient(145deg, #cc00ff, #6600ff)", animation: "glow pulse" },
-            { name: "Золотой", gradient: "linear-gradient(145deg, gold, orange)", animation: "pulse" }, // 1 место
-            { name: "Серебряный", gradient: "linear-gradient(145deg, silver, lightgray)", animation: "glow" }, // 2 место
-            { name: "Бронзовый", gradient: "linear-gradient(145deg, #cd7f32, #a67b5b)", animation: "glow" }, // 3 место
-            { name: "Космический", gradient: "linear-gradient(145deg, #000000, #4b6cb7)", animation: "spin" }, // Сезонный
-            { name: "Лунный", gradient: "linear-gradient(145deg, #a9a9a9, #d3d3d3)", animation: "glow" }, // За локацию Луна
-            { name: "Марсианский", gradient: "linear-gradient(145deg, #ff4500, #8b0000)", animation: "pulse" }, // За локацию Марс
-            { name: "Босс", gradient: "linear-gradient(145deg, #4b0082, #000000)", animation: "spin" }, // За победу над боссом
-            { name: "Темный", gradient: "linear-gradient(145deg, #000000, #4b0082)", animation: "spin" }, // За Темную Материю
-            { name: "Квазарный", gradient: "linear-gradient(145deg, #0000ff, #00ffff)", animation: "glow" }, // За Квазар
-            { name: "Временной", gradient: "linear-gradient(145deg, #ffffff, #c0c0c0)", animation: "pulse" }, // За Коридор Времени
-            { name: "Призрачный", gradient: "linear-gradient(145deg, #808080, #a9a9a9)", animation: "glow" }, // За Галактику Призраков
-            { name: "Светлый", gradient: "linear-gradient(145deg, #ffffff, #f0f0f0)", animation: "pulse" }, // Новый скин
-            { name: "Радужный", gradient: "linear-gradient(145deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff)", animation: "spin" }, // Новый скин
-            { name: "Плазменный", gradient: "linear-gradient(145deg, #0000ff, #00ffff, #00ff00, #ffff00, #ff0000)", animation: "glow" }, // Новый скин
-            { name: "Квантовый", gradient: "linear-gradient(145deg, #ffffff, #000000)", animation: "pulse" }, // Новый скин
-            { name: "Нейтронный", gradient: "linear-gradient(145deg, #808080, #a9a9a9)", animation: "glow" }, // Новый скин
-            { name: "Гравитационный", gradient: "linear-gradient(145deg, #000000, #4b0082)", animation: "spin" } // Новый скин
-        ];
-
-        // Сезоны
-        const seasons = [
-            { name: "Космическая Охота", duration: 7, start: new Date("2025-11-15"), active: false },
-            { name: "Галактические Гонки", duration: 7, start: new Date("2025-11-22"), active: false }
-        ];
-
-        // Сражение
-        let battle = {
-            active: false,
-            clicksLeft: 10,
-            timeLeft: 10,
-            enemy: "Астероид",
-            reward: 500
-        };
-
-        // Враги (количество кликов, время, награда)
-        const enemies = {
-            "Астероид": { clicks: 10, time: 10, reward: "points" },
-            "Пират": { clicks: 15, time: 15, reward: "buff" },
-            "Босс": { clicks: 20, time: 10, reward: "skin" },
-            "Темная Материя": { clicks: 30, time: 10, reward: "skin" },
-            "Квазар": { clicks: 40, time: 15, reward: "skin" },
-            "Коридор Времени": { clicks: 50, time: 20, reward: "skin" },
-            "Галактика Призраков": { clicks: 60, time: 25, reward: "skin" },
-            "Инопланетянин": { clicks: 50, time: 20, reward: "buff" },
-            "Киборг": { clicks: 60, time: 15, reward: "skin" },
-            "Дракон": { clicks: 70, time: 25, reward: "skin" },
-            "Зомби": { clicks: 20, time: 10, reward: "points" },
-            "Робот": { clicks: 30, time: 15, reward: "buff" },
-            "Скелет": { clicks: 25, time: 12, reward: "points" },
-            "Минотавр": { clicks: 40, time: 20, reward: "buff" },
-            "Гидра": { clicks: 55, time: 30, reward: "skin" },
-            "Феникс": { clicks: 45, time: 25, reward: "skin" },
-            "Кракен": { clicks: 65, time: 35, reward: "skin" },
-            "Левиафан": { clicks: 60, time: 30, reward: "skin" },
-            "Бафомет": { clicks: 80, time: 40, reward: "skin" },
-            "Люцифер": { clicks: 100, time: 50, reward: "skin" },
-            "Мегазорг": { clicks: 120, time: 60, reward: "skin" },
-            "Титан": { clicks: 90, time: 45, reward: "skin" },
-            "Колосс": { clicks: 95, time: 50, reward: "skin" },
-            "Гигант": { clicks: 100, time: 55, reward: "skin" },
-            "Великан": { clicks: 105, time: 60, reward: "skin" },
-            "Монстр": { clicks: 110, time: 65, reward: "skin" },
-            "Чудовище": { clicks: 115, time: 70, reward: "skin" },
-            "Зверь": { clicks: 120, time: 75, reward: "skin" },
-            "Змей": { clicks: 125, time: 80, reward: "skin" },
-            "Скорпион": { clicks: 130, time: 85, reward: "skin" },
-            "Паук": { clicks: 135, time: 90, reward: "skin" },
-            "Комар": { clicks: 5, time: 5, reward: "points" },
-            "Муха": { clicks: 10, time: 10, reward: "points" },
-            "Блоха": { clicks: 15, time: 15, reward: "points" }
-        };
-
-        // Создаём звуки
-        const clickSound = new Audio("audio/mpeg;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsRbAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQMSkAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV");
-        const purchaseSound = new Audio("audio/mpeg;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsRbAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQMSkAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV");
-        const achievementSound = new Audio("audio/mpeg;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsRbAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQMSkAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV");
-
-        // Загрузка сохранённого прогресса
-        window.onload = function () {
-            const saved = JSON.parse(localStorage.getItem('clickerSave'));
-            if (saved) {
-                count = saved.count || 0;
-                level = saved.level || 1;
-                perClick = saved.perClick || 1;
-                autoClick = saved.autoClick || 0;
-                multiplier = saved.multiplier || 1;
-                talentPoints = saved.talentPoints || 0;
-                skillPoints = saved.skillPoints || 0;
-                currentSkin = saved.currentSkin || 0;
-                currentGalaxy = saved.currentGalaxy || 0;
-                story = saved.story || story;
-                battle = saved.battle || battle;
-                quests = saved.quests || quests;
-                talents = saved.talents || talents;
-                skills = saved.skills || skills;
-                unlocked = new Set(saved.unlocked || []);
-                buffs = saved.buffs || [];
-                lastRandomQuestTime = saved.lastRandomQuestTime || 0;
-                randomQuest = saved.randomQuest || null;
-                document.getElementById("counter").innerText = count;
-                document.getElementById("level").innerText = `Уровень: ${level}`;
-                document.getElementById("talentPoints").innerText = `Очки талантов: ${talentPoints}`;
-                document.getElementById("skillPoints").innerText = `Очки умений: ${skillPoints}`;
-                document.getElementById("perClick").innerText = perClick.toFixed(2);
-                document.getElementById("autoClick").innerText = autoClick.toFixed(2);
-                applySkin();
-                updateBuffsDisplay();
-                updateQuestsDisplay();
-                updateTalentTree();
-                updateRandomQuest();
-                applyGalaxy();
-            }
-
-            // Проверяем Telegram WebApp
-            if (window.Telegram && window.Telegram.WebApp) {
-                document.getElementById("send-to-chat-btn").style.display = "inline-block";
-                document.getElementById("leaderboard-btn").style.display = "inline-block";
-                window.Telegram.WebApp.onEvent("dataReceive", (eventData) => {
-                    if (eventData.data.startsWith("leaderboard:")) {
-                        const data = JSON.parse(eventData.data.replace("leaderboard:", ""));
-                        showLeaderboard(data);
-                    }
-                });
-            }
-
-            // Проверяем сезон
-            checkSeason();
-        };
-
-        // Применить скин
-        function applySkin() {
-            const skin = skins[currentSkin];
-            const button = document.getElementById("clicker");
-            button.style.background = skin.gradient;
-            button.style.animation = skin.animation ? `${skin.animation} 2s infinite` : "none";
-        }
-
-        // Применить галактику
-        function applyGalaxy() {
-            const galaxy = galaxies[currentGalaxy];
-            document.body.style.background = galaxy.bg;
-            showAchievement(`🌌 Вы в галактике: ${galaxy.name}!`);
-        }
-
-        // Проверка сезона
-        function checkSeason() {
-            const today = new Date();
-            for (let i = 0; i < seasons.length; i++) {
-                const start = new Date(seasons[i].start);
-                const end = new Date(start);
-                end.setDate(start.getDate() + seasons[i].duration);
-
-                if (today >= start && today < end) {
-                    seasons[i].active = true;
-                    document.getElementById("season").style.display = "block";
-                    showAchievement(`🎉 Сезон: ${seasons[i].name} активен!`);
-                    if (currentSkin < 8) {
-                        currentSkin = 8; // Сезонный скин
-                        applySkin();
-                        showAchievement("🎁 Сезонный скин разблокирован!");
-                    }
-                    return;
+            tick() {
+                if (this.state.autoClick > 0) {
+                    const gain = this.state.autoClick * this.settings.galaxies[this.state.galaxyIndex].mult;
+                    this.state.score += gain;
+                    UI.updateStats();
                 }
-            }
-            document.getElementById("season").style.display = "none";
-        }
+                UI.checkUpgradesAvailability();
+            },
 
-        // Открыть историю
-        function openStory() {
-            document.getElementById("story").style.display = "block";
-        }
-
-        // Продолжить историю
-        function nextStory() {
-            if (count < story.requiredScore) {
-                showAchievement(`Нужно ${story.requiredScore} очков, чтобы продолжить!`);
-                return;
-            }
-
-            if (story.stage === 0) {
-                // Выбор: Луна или Марс
-                document.getElementById("story").innerHTML = `
-                    <p>🌌 Вы покидаете Землю. Куда направимся?</p>
-                    <button class="story-btn" onclick="choosePath('moon')">🚀 Луна</button>
-                    <button class="story-btn" onclick="choosePath('mars')">🔴 Марс</button>
-                `;
-                return;
-            }
-
-            if (story.stage === 1) {
-                if (story.path === "moon") {
-                    story.location = "Луна";
-                    story.enemy = "Пират";
-                    story.requiredScore = 5000;
-                    if (currentSkin < 9) {
-                        currentSkin = 9; // Лунный скин
-                        applySkin();
-                        showAchievement("🌕 Новый скин разблокирован: Лунный!");
-                    }
-                    showAchievement("🌌 Вы прибыли на Луну. Враг: Пират");
-                } else if (story.path === "mars") {
-                    story.location = "Марс";
-                    story.enemy = "Босс";
-                    story.requiredScore = 10000;
-                    if (currentSkin < 10) {
-                        currentSkin = 10; // Марсианский скин
-                        applySkin();
-                        showAchievement("🔴 Новый скин разблокирован: Марсианский!");
-                    }
-                    showAchievement("🌌 Вы прибыли на Марс. Враг: Босс");
-                }
-            } else if (story.stage === 2) {
-                story.location = "Квазар";
-                story.enemy = "Темная Материя";
-                story.requiredScore = 20000;
-                if (currentSkin < 11) {
-                    currentSkin = 11; // Босс-скин
-                    applySkin();
-                    showAchievement("👾 Новый скин разблокирован: Босс!");
-                }
-                showAchievement("🌌 Вы прибыли в Квазар. Враг: Темная Материя");
-            } else if (story.stage === 3) {
-                story.location = "Квазар";
-                story.enemy = "Квазар";
-                story.requiredScore = 50000;
-                if (currentSkin < 12) {
-                    currentSkin = 12; // Темный скин
-                    applySkin();
-                    showAchievement("🌌 Новый скин разблокирован: Темный!");
-                }
-                showAchievement("🌌 Вы в Квазаре. Враг: Квазар");
-            } else if (story.stage === 4) {
-                story.location = "Коридор Времени";
-                story.enemy = "Коридор Времени";
-                story.requiredScore = 100000;
-                if (currentSkin < 13) {
-                    currentSkin = 13; // Квазарный скин
-                    applySkin();
-                    showAchievement("🌌 Новый скин разблокирован: Квазарный!");
-                }
-                showAchievement("🌌 Вы в Коридоре Времени. Враг: Коридор Времени");
-            } else if (story.stage === 5) {
-                story.location = "Галактика Призраков";
-                story.enemy = "Галактика Призраков";
-                story.requiredScore = 200000;
-                if (currentSkin < 14) {
-                    currentSkin = 14; // Временной скин
-                    applySkin();
-                    showAchievement("🌌 Новый скин разблокирован: Временной!");
-                }
-                showAchievement("🌌 Вы в Галактике Призраков. Враг: Галактика Призраков");
-            } else if (story.stage === 6) {
-                story.location = "Финал";
-                story.enemy = "Финал";
-                story.requiredScore = Infinity; // Никогда не требует
-                if (currentSkin < 15) {
-                    currentSkin = 15; // Призрачный скин
-                    applySkin();
-                    showAchievement("🌌 Новый скин разблокирован: Призрачный!");
-                }
-                showAchievement("🌌 Поздравляем! Вы прошли игру!");
-                story.stage = 0;
-                story.path = null;
-            }
-
-            document.getElementById("story").innerHTML = `
-                <p>🌌 Сюжет: Вы отправляетесь в космическое путешествие, чтобы спасти Землю от темной материи.</p>
-                <p>📍 Локация: ${story.location}</p>
-                <p>👾 Враг: ${story.enemy}</p>
-                <p>🎯 Задание: наберите ${story.requiredScore} очков</p>
-                <button class="story-btn" onclick="startBattle()">Сражение</button>
-            `;
-            story.stage++;
-        }
-
-        // Начать сражение
-        function startBattle() {
-            battle.active = true;
-            battle.enemy = story.enemy;
-            const enemyData = enemies[battle.enemy];
-            battle.clicksLeft = enemyData.clicks;
-            battle.timeLeft = enemyData.time;
-            document.getElementById("battle-enemy").innerText = battle.enemy;
-            document.getElementById("clicks-left").innerText = battle.clicksLeft;
-            document.getElementById("time-left-battle").innerText = battle.timeLeft;
-            document.getElementById("battle").style.display = "block";
-            document.getElementById("clicker").onclick = clickBattle;
-            showAchievement(`⚔️ Сражение с ${battle.enemy} начато!`);
-        }
-
-        // Клик в сражении
-        function clickBattle() {
-            if (!battle.active) return;
-            battle.clicksLeft--;
-            document.getElementById("clicks-left").innerText = battle.clicksLeft;
-            if (battle.clicksLeft <= 0) {
-                // Победа
-                const enemyData = enemies[battle.enemy];
-                if (enemyData.reward === "points") {
-                    count += 500;
-                    document.getElementById("counter").innerText = count;
-                    showAchievement(`🎉 Победа! Награда: 500 очков!`);
-                } else if (enemyData.reward === "buff") {
-                    addBuff("multiplier", 2, 30);
-                    showAchievement(`🎉 Победа! Награда: x2 на 30 сек!`);
-                } else if (enemyData.reward === "skin") {
-                    if (battle.enemy === "Темная Материя" && currentSkin < 12) {
-                        currentSkin = 12; // Темный скин
-                        applySkin();
-                        showAchievement("🎉 Победа! Награда: новый скин разблокирован!");
-                    } else if (battle.enemy === "Квазар" && currentSkin < 13) {
-                        currentSkin = 13; // Квазарный скин
-                        applySkin();
-                        showAchievement("🎉 Победа! Награда: новый скин разблокирован!");
-                    } else if (battle.enemy === "Коридор Времени" && currentSkin < 14) {
-                        currentSkin = 14; // Временной скин
-                        applySkin();
-                        showAchievement("🎉 Победа! Награда: новый скин разблокирован!");
-                    } else if (battle.enemy === "Галактика Призраков" && currentSkin < 15) {
-                        currentSkin = 15; // Призрачный скин
-                        applySkin();
-                        showAchievement("🎉 Победа! Награда: новый скин разблокирован!");
-                    }
-                }
-                document.getElementById("battle").style.display = "none";
-                document.getElementById("clicker").onclick = clickCounter;
-                battle.active = false;
-            }
-        }
-
-        // Обновление сражения
-        setInterval(() => {
-            if (battle.active) {
-                battle.timeLeft--;
-                document.getElementById("time-left-battle").innerText = battle.timeLeft;
-                if (battle.timeLeft <= 0) {
-                    // Поражение
-                    document.getElementById("battle").style.display = "none";
-                    document.getElementById("clicker").onclick = clickCounter;
-                    showAchievement(`💥 Поражение! Попробуйте снова.`);
-                    battle.active = false;
-                }
-            }
-        }, 1000);
-
-        // Выбрать путь
-        function choosePath(path) {
-            story.path = path;
-            story.stage = 1;
-            nextStory();
-        }
-
-        // Проверка ежедневной награды
-        function checkDailyReward() {
-            const today = new Date().toDateString();
-            const lastLogin = localStorage.getItem('lastLogin');
-            if (lastLogin !== today) {
-                document.getElementById("daily-reward").style.display = "block";
-            } else {
-                document.getElementById("daily-reward").style.display = "none";
-            }
-        }
-
-        // Получить ежедневную награду
-        function claimDaily() {
-            const rewards = [
-                { type: "points", amount: 100, text: "+100 очков!" },
-                { type: "multiplier", amount: 2, duration: 30, text: "x2 на 30 сек!" },
-                { type: "click", amount: 5, duration: 20, text: "+5 за клик на 20 сек!" },
-                { type: "auto", amount: 1, duration: 60, text: "+1 автоклик на 60 сек!" }
-            ];
-
-            const reward = rewards[Math.floor(Math.random() * rewards.length)];
-            document.getElementById("daily-text").innerText = reward.text;
-
-            if (reward.type === "points") {
-                count += reward.amount;
-                document.getElementById("counter").innerText = count;
-            } else if (reward.type === "multiplier") {
-                addBuff("multiplier", reward.amount, reward.duration);
-            } else if (reward.type === "click") {
-                addBuff("click", reward.amount, reward.duration);
-            } else if (reward.type === "auto") {
-                addBuff("auto", reward.amount, reward.duration);
-            }
-
-            localStorage.setItem('lastLogin', new Date().toDateString());
-            document.getElementById("daily-reward").style.display = "none";
-        }
-
-        // Добавление баффа
-        function addBuff(type, amount, duration) {
-            const buff = { type, amount, duration, id: Date.now() };
-            buffs.push(buff);
-            updateBuffsDisplay();
-
-            setTimeout(() => {
-                buffs = buffs.filter(b => b.id !== buff.id);
-                updateBuffsDisplay();
-            }, duration * 1000);
-        }
-
-        // Отображение активных баффов
-        function updateBuffsDisplay() {
-            const activeBuffs = document.getElementById("active-buffs");
-            activeBuffs.innerHTML = "";
-
-            buffs.forEach(buff => {
-                const div = document.createElement("div");
-                div.innerText = `${getBuffText(buff.type)}: ${buff.amount} (${buff.duration} сек)`;
-                activeBuffs.appendChild(div);
-            });
-        }
-
-        // Название баффа
-        function getBuffText(type) {
-            if (type === "multiplier") return "Множитель";
-            if (type === "click") return "Клик";
-            if (type === "auto") return "Автоклик";
-            if (type === "shield") return "Щит";
-            return "Неизвестный";
-        }
-
-        // Отображение квестов
-        function updateQuestsDisplay() {
-            const activeQuests = document.getElementById("active-quests");
-            activeQuests.innerHTML = "";
-
-            quests.forEach(quest => {
-                if (!quest.completed) {
-                    const div = document.createElement("div");
-                    div.innerText = `${quest.text}: ${quest.progress}/${quest.target}`;
-                    activeQuests.appendChild(div);
-                }
-            });
-
-            if (randomQuest && !randomQuest.completed) {
-                const div = document.createElement("div");
-                div.innerText = `🎲 Случайный: ${randomQuest.text}: ${randomQuest.progress}/${randomQuest.target}`;
-                activeQuests.appendChild(div);
-            }
-        }
-
-        // Проверка выполнения квестов
-        function checkQuests() {
-            quests.forEach(quest => {
-                if (!quest.completed && quest.progress >= quest.target) {
-                    quest.completed = true;
-                    count += quest.reward;
-                    document.getElementById("counter").innerText = count;
-                    showAchievement(`Квест выполнен! Награда: ${quest.reward} очков`);
-                }
-            });
-
-            if (randomQuest && !randomQuest.completed && randomQuest.progress >= randomQuest.target) {
-                randomQuest.completed = true;
-                count += randomQuest.reward;
-                document.getElementById("counter").innerText = count;
-                showAchievement(`Случайный квест выполнен! Награда: ${randomQuest.reward} очков`);
-                randomQuest = null;
-            }
-
-            updateQuestsDisplay();
-        }
-
-        // Генерация случайного квеста
-        function generateRandomQuest() {
-            const now = Date.now();
-            const fiveMinutes = 5 * 60 * 1000;
-
-            if (now - lastRandomQuestTime > fiveMinutes) {
-                const questTypes = [
-                    { text: "Кликни 50 раз", target: 50, reward: 100 },
-                    { text: "Набери 500 очков", target: 500, reward: 150 },
-                    { text: "Купи 5 улучшений", target: 5, reward: 120 }
-                ];
-                const quest = questTypes[Math.floor(Math.random() * questTypes.length)];
-                randomQuest = { ...quest, progress: 0, completed: false, id: "random" };
-                lastRandomQuestTime = now;
-            }
-        }
-
-        // Обновление случайного квеста
-        function updateRandomQuest() {
-            generateRandomQuest();
-            updateQuestsDisplay();
-        }
-
-        // Обновление дерева талантов и SVG
-        function updateTalentTree() {
-            const clickNode = document.getElementById("talent-click");
-            const autoNode = document.getElementById("talent-auto");
-            const levelNode = document.getElementById("talent-level");
-
-            // Клик
-            if (talents.clickBonus.level > 0) {
-                clickNode.classList.add("active");
-            }
-
-            // Авто (требует клик)
-            if (talents.autoBonus.level > 0) {
-                autoNode.classList.add("active");
-            } else if (talents.clickBonus.level === 0) {
-                autoNode.classList.add("locked");
-            } else {
-                autoNode.classList.remove("locked");
-            }
-
-            // Уровень (требует авто)
-            if (talents.levelBonus.level > 0) {
-                levelNode.classList.add("active");
-            } else if (talents.autoBonus.level === 0) {
-                levelNode.classList.add("locked");
-            } else {
-                levelNode.classList.remove("locked");
-            }
-
-            drawTalentConnections();
-        }
-
-        // Отрисовка SVG-линий между талантами
-        function drawTalentConnections() {
-            const svg = document.getElementById("talent-connections");
-            svg.innerHTML = "";
-
-            // Позиции узлов (приблизительно)
-            const clickX = 50;
-            const autoX = 150;
-            const levelX = 250;
-            const y = 50;
-
-            // Линия: Клик -> Авто
-            if (talents.clickBonus.level > 0) {
-                const line1 = document.createElementNS("http://www.w3.org/2000/svg", "line");
-                line1.setAttribute("x1", clickX + 40);
-                line1.setAttribute("y1", y);
-                line1.setAttribute("x2", autoX - 40);
-                line1.setAttribute("y2", y);
-                line1.setAttribute("stroke", "white");
-                line1.setAttribute("stroke-width", "2");
-                svg.appendChild(line1);
-            }
-
-            // Линия: Авто -> Уровень
-            if (talents.autoBonus.level > 0) {
-                const line2 = document.createElementNS("http://www.w3.org/2000/svg", "line");
-                line2.setAttribute("x1", autoX + 40);
-                line2.setAttribute("y1", y);
-                line2.setAttribute("x2", levelX - 40);
-                line2.setAttribute("y2", y);
-                line2.setAttribute("stroke", "white");
-                line2.setAttribute("stroke-width", "2");
-                svg.appendChild(line2);
-            }
-        }
-
-        // Анимация таланта
-        function animateTalent(nodeId) {
-            const node = document.getElementById(nodeId);
-            node.classList.add("pulse");
-            setTimeout(() => {
-                node.classList.remove("pulse");
-            }, 500);
-        }
-
-        // Проверка уровня
-        function checkLevel() {
-            const newLevel = Math.floor(Math.sqrt(count / 100)) + 1;
-            if (newLevel > level) {
-                level = newLevel;
-                perClick += 1; // Бонус за уровень
-                document.getElementById("level").innerText = `Уровень: ${level}`;
-                document.getElementById("perClick").innerText = perClick.toFixed(2);
-
-                // Очки умений за уровень
-                if (level % 3 === 0) {
-                    skillPoints++;
-                    document.getElementById("skillPoints").innerText = `Очки умений: ${skillPoints}`;
-                    showAchievement(`🧠 Получено очко умения!`);
+            click(e) {
+                // Расчет силы клика
+                let power = this.state.perClick * this.settings.galaxies[this.state.galaxyIndex].mult * this.state.clickMultiplier;
+                
+                // Критический удар (Талант)
+                let isCrit = false;
+                if (Math.random() < (this.state.talents.crit * 0.05)) {
+                    power *= 3;
+                    isCrit = true;
                 }
 
-                // Разблокировка скина за уровень
-                if (level % 3 === 0 && currentSkin < skins.length - 1) {
-                    currentSkin++;
-                    applySkin();
-                    showAchievement(`Новый скин разблокирован!`);
+                this.state.score += power;
+                
+                // Проверка уровня
+                this.checkLevel();
+
+                // Визуал
+                UI.createParticle(power, isCrit);
+                UI.animateButton();
+                UI.updateStats();
+
+                // Квесты (упрощенно)
+                if (this.state.score > 100 && !this.hasAchievement("First 100")) {
+                    this.unlockAchievement("First 100");
                 }
+                
+                // Проверка кнопок магазина
+                UI.checkUpgradesAvailability();
+            },
 
-                // Очки талантов за уровень
-                if (level % 5 === 0) {
-                    talentPoints++;
-                    document.getElementById("talentPoints").innerText = `Очки талантов: ${talentPoints}`;
+            buyUpgrade(id) {
+                const u = this.state.upgrades[id];
+                const cost = Math.floor(u.baseCost * Math.pow(1.5, u.count));
+                
+                if (this.state.score >= cost) {
+                    this.state.score -= cost;
+                    u.count++;
+                    
+                    if (u.type === "click") this.state.perClick += u.basePower;
+                    if (u.type === "auto") this.state.autoClick += u.basePower;
+                    
+                    UI.renderShop(); // Перерисовка цен
+                    UI.updateStats();
+                    UI.showToast(`Куплено: ${u.name}`);
                 }
+            },
 
-                // Разблокировка галактики за уровень
-                if (level % 10 === 0 && currentGalaxy < galaxies.length - 1) {
-                    currentGalaxy++;
-                    applyGalaxy();
-                    showAchievement(`Новая галактика разблокирована: ${galaxies[currentGalaxy].name}!`);
-                }
-            }
-        }
+            buyTalent(id) {
+                if (this.state.talentPoints > 0) {
+                    this.state.talentPoints--;
+                    this.state.talents[id]++;
+                    
+                    // Логика талантов
+                    if(id === 'click') this.state.clickMultiplier += 0.2; // +20% к клику
+                    if(id === 'auto') this.state.autoClick += 5; // Фиксированный бонус
 
-        // Переключить галактику
-        function switchGalaxy() {
-            if (currentGalaxy < galaxies.length - 1) {
-                currentGalaxy++;
-            } else {
-                currentGalaxy = 0;
-            }
-            applyGalaxy();
-        }
-
-        // Покупка умения
-        function buySkill(type) {
-            let cost = 1;
-            if (type === "multiplier") cost = 3;
-
-            if (skillPoints >= cost) {
-                skillPoints -= cost;
-                skills[type].level++;
-                document.getElementById("skillPoints").innerText = `Очки умений: ${skillPoints}`;
-                showAchievement(`🧠 Умение "${type}" улучшено!`);
-            }
-        }
-
-        // Использовать умение
-        function useSkill(type) {
-            if (skillPoints >= 3) {
-                skillPoints -= 3;
-                document.getElementById("skillPoints").innerText = `Очки умений: ${skillPoints}`;
-                if (type === "multiplier") {
-                    addBuff("multiplier", skills[type].value, skills[type].duration);
-                    showAchievement(`⚡ Умение "${type}" активировано!`);
-                }
-            } else {
-                showAchievement("Недостаточно очков умений!");
-            }
-        }
-
-        // Покупка таланта
-        function buyTalent(type) {
-            let cost = 1;
-            if (type === "levelBonus") cost = 2;
-
-            // Проверка требований
-            if (type === "autoBonus" && talents.clickBonus.level === 0) {
-                showAchievement("Сначала прокачай 'Клик'!");
-                return;
-            }
-            if (type === "levelBonus" && talents.autoBonus.level === 0) {
-                showAchievement("Сначала прокачай 'Авто'!");
-                return;
-            }
-
-            if (talentPoints >= cost) {
-                talentPoints -= cost;
-                talents[type].level++;
-                document.getElementById("talentPoints").innerText = `Очки талантов: ${talentPoints}`;
-                updateTalentTree();
-
-                // Анимация
-                let nodeId;
-                if (type === "clickBonus") nodeId = "talent-click";
-                if (type === "autoBonus") nodeId = "talent-auto";
-                if (type === "levelBonus") nodeId = "talent-level";
-                animateTalent(nodeId);
-            }
-        }
-
-        // Новые таланты
-        function buyTalentX12() {
-            const cost = parseInt(document.getElementById("cost8").innerText);
-            if (count >= cost) {
-                count -= cost;
-                perClick *= 1.2;
-                document.getElementById("cost8").innerText = Math.floor(cost * 2);
-                document.getElementById("perClick").innerText = perClick.toFixed(2);
-                document.getElementById("counter").innerText = count;
-
-                purchaseSound.currentTime = 0;
-                purchaseSound.play();
-            }
-        }
-
-        function buyTalentAuto03() {
-            const cost = parseInt(document.getElementById("cost9").innerText);
-            if (count >= cost) {
-                count -= cost;
-                autoClick += 0.3;
-                document.getElementById("cost9").innerText = Math.floor(cost * 1.8);
-                document.getElementById("autoClick").innerText = autoClick.toFixed(2);
-                document.getElementById("counter").innerText = count;
-
-                purchaseSound.currentTime = 0;
-                purchaseSound.play();
-            }
-        }
-
-        function buyTalentBuff5() {
-            const cost = parseInt(document.getElementById("cost10").innerText);
-            if (count >= cost) {
-                count -= cost;
-                // Увеличиваем длительность всех баффов на 5%
-                buffs.forEach(buff => {
-                    buff.duration *= 1.05;
-                });
-                document.getElementById("cost10").innerText = Math.floor(cost * 2);
-                document.getElementById("counter").innerText = count;
-
-                purchaseSound.currentTime = 0;
-                purchaseSound.play();
-            }
-        }
-
-        function buyTalentShield() {
-            const cost = parseInt(document.getElementById("cost11").innerText);
-            if (count >= cost) {
-                count -= cost;
-                // Добавляем бафф щита
-                addBuff("shield", 1, 60); // 60 сек защита от вражеских баффов
-                document.getElementById("cost11").innerText = Math.floor(cost * 2);
-                document.getElementById("counter").innerText = count;
-
-                purchaseSound.currentTime = 0;
-                purchaseSound.play();
-            }
-        }
-
-        function buyTalentLevel11() {
-            const cost = parseInt(document.getElementById("cost12").innerText);
-            if (count >= cost) {
-                count -= cost;
-                multiplier *= 1.1;
-                document.getElementById("cost12").innerText = Math.floor(cost * 2);
-                document.getElementById("counter").innerText = count;
-
-                purchaseSound.currentTime = 0;
-                purchaseSound.play();
-            }
-        }
-
-        function buyTalentChanceX3() {
-            const cost = parseInt(document.getElementById("cost13").innerText);
-            if (count >= cost) {
-                count -= cost;
-                // Шанс x3 за клик
-                document.getElementById("cost13").innerText = Math.floor(cost * 2);
-                document.getElementById("counter").innerText = count;
-
-                purchaseSound.currentTime = 0;
-                purchaseSound.play();
-            }
-        }
-
-        function buyTalentChancePlus10() {
-            const cost = parseInt(document.getElementById("cost14").innerText);
-            if (count >= cost) {
-                count -= cost;
-                // Шанс +10 за клик
-                document.getElementById("cost14").innerText = Math.floor(cost * 2);
-                document.getElementById("counter").innerText = count;
-
-                purchaseSound.currentTime = 0;
-                purchaseSound.play();
-            }
-        }
-
-        function buyTalentChanceAuto2() {
-            const cost = parseInt(document.getElementById("cost15").innerText);
-            if (count >= cost) {
-                count -= cost;
-                // Шанс +2 к автоклику
-                document.getElementById("cost15").innerText = Math.floor(cost * 2);
-                document.getElementById("counter").innerText = count;
-
-                purchaseSound.currentTime = 0;
-                purchaseSound.play();
-            }
-        }
-
-        // Применение талантов
-        function applyTalents() {
-            perClick += talents.clickBonus.level * talents.clickBonus.value;
-            autoClick += talents.autoBonus.level * talents.autoBonus.value;
-            multiplier = 1 + talents.levelBonus.level * (talents.levelBonus.value - 1);
-        }
-
-        // Применение умений
-        function applySkills() {
-            perClick += skills.clickBonus.level * skills.clickBonus.value;
-            autoClick += skills.autoBonus.level * skills.autoBonus.value;
-        }
-
-        // Поделиться результатом
-        function shareResult() {
-            const url = `https://t.me/share/url?url=${encodeURIComponent(window.location.href)}&text=🚀 Я набрал ${count} очков в Clicker Adventure! Попробуй побить меня!`;
-            window.open(url, '_blank');
-        }
-
-        // Отправить результат в чат (Telegram WebApp)
-        function sendResultToChat() {
-            if (window.Telegram && window.Telegram.WebApp) {
-                const webApp = window.Telegram.WebApp;
-                const user = webApp.initDataUnsafe?.user;
-                if (user) {
-                    // Подготовка данных
-                    const data = {
-                        userId: user.id,
-                        score: count,
-                        level: level,
-                        talentPoints: talentPoints
-                    };
-                    // Отправка на бэкенд
-                    webApp.sendData(JSON.stringify(data));
-                    // Показываем сообщение
-                    webApp.showAlert(`✅ Результат ${count} отправлен!`);
+                    UI.updateStats();
+                    UI.renderTalents();
                 } else {
-                    showAchievement("Ошибка: не удалось получить данные пользователя.");
+                    UI.showToast("Нет очков талантов!", "error");
                 }
-            } else {
-                showAchievement("Доступно только в Telegram Mini App.");
-            }
-        }
+            },
 
-        // Запросить leaderboard (фейковый)
-        function requestLeaderboard() {
-            if (window.Telegram && window.Telegram.WebApp) {
-                const fakeLeaderboard = [
-                    { userId: 111111111, username: "Player1", score: 10000 },
-                    { userId: 222222222, username: "Player2", score: 9500 },
-                    { userId: 333333333, username: "Player3", score: 9000 },
-                    { userId: 444444444, username: "Player4", score: 8500 },
-                    { userId: 555555555, username: "Player5", score: 8000 }
-                ];
+            checkLevel() {
+                const req = Math.floor(100 * Math.pow(1.2, this.state.level));
+                if (this.state.score > req * this.state.level) { // Просто формула для примера
+                    // Уровень растет не от трат, а от накопления (условно)
+                    // Здесь упростим: даем очко таланта каждые 500 кликов (условно)
+                }
+                
+                // Реальная проверка уровня
+                const newLevel = Math.floor(Math.sqrt(this.state.score / 100)) + 1;
+                if (newLevel > this.state.level) {
+                    const diff = newLevel - this.state.level;
+                    this.state.level = newLevel;
+                    this.state.talentPoints += diff; // 1 очко за уровень
+                    UI.showToast(`Уровень ${newLevel}! +${diff} ТП`);
+                }
+            },
 
-                const webApp = window.Telegram.WebApp;
-                const user = webApp.initDataUnsafe?.user;
-                if (user && !fakeLeaderboard.some(p => p.userId === user.id)) {
-                    fakeLeaderboard.push({ userId: user.id, username: user.username || `ID: ${user.id}`, score: count });
-                    fakeLeaderboard.sort((a, b) => b.score - a.score);
-                    if (fakeLeaderboard.length > 5) {
-                        fakeLeaderboard.length = 5;
+            nextGalaxy() {
+                const nextIdx = this.state.galaxyIndex + 1;
+                if (nextIdx < this.settings.galaxies.length) {
+                    const g = this.settings.galaxies[nextIdx];
+                    if (this.state.score >= g.req) {
+                        this.state.galaxyIndex = nextIdx;
+                        this.applyGalaxy();
+                        UI.showToast(`Перелет в: ${g.name}`);
+                    } else {
+                        UI.showToast(`Нужно ${g.req} очков!`, "error");
                     }
+                } else {
+                    UI.showToast("Это край вселенной!");
                 }
+            },
 
-                webApp.sendData("leaderboard:" + JSON.stringify(fakeLeaderboard));
-            } else {
-                showAchievement("Доступно только в Telegram Mini App.");
+            applyGalaxy() {
+                const g = this.settings.galaxies[this.state.galaxyIndex];
+                document.body.className = ""; // сброс
+                if(this.state.galaxyIndex === 0) document.body.classList.add("bg-milkyway");
+                if(this.state.galaxyIndex === 1) document.body.classList.add("bg-andromeda");
+                if(this.state.galaxyIndex === 2) document.body.classList.add("bg-orion");
+                
+                const btn = document.getElementById("main-clicker");
+                btn.style.background = g.color;
+                
+                document.getElementById("galaxy-name").innerText = g.name;
+            },
+
+            hasAchievement(name) { return this.state.achievements.includes(name); },
+            unlockAchievement(name) {
+                this.state.achievements.push(name);
+                UI.showToast(`🏆 Достижение: ${name}`);
+                UI.renderProfile();
+            },
+
+            hardReset() {
+                if(confirm("Точно удалить весь прогресс?")) {
+                    localStorage.removeItem("starClickerSave");
+                    location.reload();
+                }
+            },
+
+            save() {
+                localStorage.setItem("starClickerSave", JSON.stringify(this.state));
+            },
+
+            load() {
+                const saved = localStorage.getItem("starClickerSave");
+                if (saved) {
+                    try {
+                        const parsed = JSON.parse(saved);
+                        this.state = { ...this.state, ...parsed };
+                        // Восстановление вложенных объектов, если нужно
+                    } catch(e) { console.error("Save corrupted"); }
+                }
             }
-        }
+        };
 
-        // Показать leaderboard
-        function showLeaderboard(data) {
-            const list = document.getElementById("leaderboard-list");
-            list.innerHTML = "";
+        /* --- UI MANAGER --- */
+        const UI = {
+            init() {
+                this.renderShop();
+                this.renderTalents();
+                this.renderProfile();
+                this.updateStats();
+            },
 
-            data.forEach((entry, index) => {
-                const div = document.createElement("div");
-                div.innerText = `#${index + 1} — ${entry.username || `ID: ${entry.userId}`} — ${entry.score} очков`;
-                list.appendChild(div);
+            updateStats() {
+                document.getElementById("score-display").innerText = Math.floor(Game.state.score).toLocaleString();
+                document.getElementById("level-display").innerText = Game.state.level;
+                document.getElementById("per-click-display").innerText = (Game.state.perClick * Game.state.clickMultiplier).toFixed(1);
+                document.getElementById("auto-click-display").innerText = Game.state.autoClick.toFixed(1);
+                document.getElementById("talent-points-display").innerText = Game.state.talentPoints;
+                document.getElementById("tp-tab-display").innerText = Game.state.talentPoints;
+            },
 
-                if (entry.userId === window.Telegram.WebApp?.initDataUnsafe?.user?.id) {
-                    if (index === 0) {
-                        if (currentSkin < 5) {
-                            currentSkin = 5;
-                            applySkin();
-                            showAchievement("🏆 Вы в 1-х в рейтинге! Новый скин разблокирован: Золотой!");
-                        }
-                    } else if (index === 1) {
-                        if (currentSkin < 6) {
-                            currentSkin = 6;
-                            applySkin();
-                            showAchievement("🥈 Вы в топ-2! Новый скин разблокирован: Серебряный!");
-                        }
-                    } else if (index === 2) {
-                        if (currentSkin < 7) {
-                            currentSkin = 7;
-                            applySkin();
-                            showAchievement("🥉 Вы в топ-3! Новый скин разблокирован: Бронзовый!");
-                        }
-                    }
+            renderShop() {
+                const container = document.getElementById("shop-list");
+                container.innerHTML = "";
+                
+                for (const [id, u] of Object.entries(Game.state.upgrades)) {
+                    const cost = Math.floor(u.baseCost * Math.pow(1.5, u.count));
+                    const div = document.createElement("div");
+                    div.className = "upgrade-card";
+                    div.innerHTML = `
+                        <div class="upgrade-info">
+                            <h4>${u.name} <span style="color:#aaa; font-size:0.8em">(Ур. ${u.count})</span></h4>
+                            <p>+${u.basePower} ${u.type === 'click' ? 'к клику' : 'авто/сек'}</p>
+                        </div>
+                        <button class="btn-buy" id="btn-${id}" onclick="Game.buyUpgrade('${id}')">
+                            💰 ${cost.toLocaleString()}
+                        </button>
+                    `;
+                    container.appendChild(div);
                 }
-            });
+                this.checkUpgradesAvailability();
+            },
 
-            document.getElementById("leaderboard").style.display = "block";
-        }
+            checkUpgradesAvailability() {
+                // Оптимизация: не перерисовываем DOM каждый тик, только меняем disabled
+                for (const [id, u] of Object.entries(Game.state.upgrades)) {
+                    const cost = Math.floor(u.baseCost * Math.pow(1.5, u.count));
+                    const btn = document.getElementById(`btn-${id}`);
+                    if(btn) btn.disabled = Game.state.score < cost;
+                }
+            },
 
-        // Открыть рулетку
-        function openWheel() {
-            document.getElementById("wheel-container").style.display = "block";
-        }
+            renderTalents() {
+                const t = Game.state.talents;
+                if(t.click > 0) document.getElementById("t-click").classList.add("active");
+                if(t.auto > 0) document.getElementById("t-auto").classList.add("active");
+                if(t.crit > 0) document.getElementById("t-crit").classList.add("active");
+            },
 
-        // Крутить рулетку
-        function spinWheel() {
-            const today = new Date().toDateString();
-            const lastSpin = localStorage.getItem('lastSpin');
-            if (lastSpin === today) {
-                showAchievement("Рулетка доступна раз в день!");
-                return;
+            renderProfile() {
+                const list = document.getElementById("achievements-list");
+                list.innerHTML = Game.state.achievements.map(a => `<li>${a}</li>`).join('');
+            },
+
+            openTab(tabId) {
+                document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
+                document.querySelectorAll(".tab-btn").forEach(el => el.classList.remove("active"));
+                
+                document.getElementById(`tab-${tabId}`).classList.add("active");
+                // Подсветка активной кнопки (нужна логика поиска по onclick, упростим)
+            },
+
+            closeTabs() {
+                document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
+                document.querySelectorAll(".tab-btn").forEach(el => el.classList.remove("active"));
+                document.querySelectorAll(".tab-btn")[2].classList.add("active"); // Центр
+            },
+
+            createParticle(amount, isCrit) {
+                const btn = document.getElementById("main-clicker");
+                const rect = btn.getBoundingClientRect();
+                
+                // Случайная позиция вокруг центра
+                const x = rect.left + rect.width/2 + (Math.random() * 100 - 50);
+                const y = rect.top + rect.height/2 + (Math.random() * 100 - 50);
+
+                const el = document.createElement("div");
+                el.className = "click-particle";
+                el.style.left = `${x}px`;
+                el.style.top = `${y}px`;
+                el.innerText = `+${Math.floor(amount)}`;
+                
+                if(isCrit) {
+                    el.style.color = "#ff0055";
+                    el.style.fontSize = "1.5rem";
+                    el.innerText += "!";
+                }
+
+                document.body.appendChild(el);
+                setTimeout(() => el.remove(), 1000);
+            },
+
+            animateButton() {
+                const btn = document.getElementById("main-clicker");
+                btn.style.transform = "scale(0.95)";
+                setTimeout(() => btn.style.transform = "scale(1)", 50);
+            },
+
+            showToast(msg, type = "info") {
+                const el = document.getElementById("toast-container");
+                el.innerText = msg;
+                el.style.borderLeftColor = type === "error" ? "red" : "var(--primary)";
+                el.classList.add("show");
+                setTimeout(() => el.classList.remove("show"), 2000);
             }
+        };
 
-            const wheel = document.getElementById("wheel");
-            const spinValue = Math.floor(Math.random() * 360) + 3600; // 10 оборотов
-            wheel.style.transform = `rotate(${spinValue}deg)`;
+        /* --- MINIGAMES ENGINE (Optimized) --- */
+        const Minigames = {
+            active: false,
+            timer: null,
+            
+            start(type) {
+                this.active = true;
+                const modal = document.getElementById("minigame-layer");
+                const container = document.getElementById("mg-container");
+                const title = document.getElementById("minigame-title");
+                
+                modal.style.display = "flex";
+                container.innerHTML = ""; // Очистка
 
-            setTimeout(() => {
-                const rewards = [
-                    { type: "points", amount: 200, text: "+200 очков!" },
-                    { type: "multiplier", amount: 2, duration: 30, text: "x2 на 30 сек!" },
-                    { type: "skin", amount: 5, text: "Новый скин!" },
-                    { type: "galaxy", amount: 1, text: "Новая галактика!" }
-                ];
-                const reward = rewards[Math.floor(Math.random() * rewards.length)];
+                if (type === 'asteroid') this.startAsteroids(container, title);
+                if (type === 'boss') this.startBoss(container, title);
+                if (type === 'wheel') this.startWheel(container, title);
+            },
 
-                if (reward.type === "points") {
-                    count += reward.amount;
-                    document.getElementById("counter").innerText = count;
-                } else if (reward.type === "multiplier") {
-                    addBuff("multiplier", reward.amount, reward.duration);
-                } else if (reward.type === "skin" && currentSkin < 5) {
-                    currentSkin = 5;
-                    applySkin();
-                } else if (reward.type === "galaxy" && currentGalaxy < galaxies.length - 1) {
-                    currentGalaxy++;
-                    applyGalaxy();
-                }
+            stop() {
+                this.active = false;
+                document.getElementById("minigame-layer").style.display = "none";
+                clearInterval(this.timer);
+            },
 
-                showAchievement(`🎁 Рулетка: ${reward.text}`);
-                localStorage.setItem('lastSpin', today);
-            }, 3000);
-        }
+            // Пример 1: Астероиды (DOM-based, но в изолированном контейнере)
+            startAsteroids(container, title) {
+                title.innerText = "☄️ Уничтожь астероиды (10 сек)";
+                let score = 0;
+                let timeLeft = 10;
+                
+                const timeDisplay = document.createElement("div");
+                timeDisplay.style.cssText = "position:absolute; top:10px; right:10px; color:white; font-size:20px;";
+                container.appendChild(timeDisplay);
 
-        // Открыть мини-игру
-        function openMinigame() {
-            document.getElementById("minigame-btn").style.display = "none";
-            setTimeout(() => {
-                document.getElementById("minigame-btn").style.display = "inline-block";
-            }, 5000);
-        }
+                const spawner = setInterval(() => {
+                    if(!this.active) return clearInterval(spawner);
+                    
+                    const ast = document.createElement("div");
+                    ast.innerText = "🌑";
+                    ast.style.cssText = `position:absolute; font-size:40px; cursor:pointer; left:${Math.random() * 80}%; top:-50px; transition: top 2s linear;`;
+                    
+                    ast.onclick = () => {
+                        score++;
+                        ast.remove();
+                        UI.showToast(`Попадание! (+100)`);
+                        Game.state.score += 100;
+                        UI.updateStats();
+                    };
+                    
+                    container.appendChild(ast);
+                    
+                    // Анимация падения
+                    setTimeout(() => { ast.style.top = "120%"; }, 50);
+                    // Удаление
+                    setTimeout(() => { if(ast.parentNode) ast.remove(); }, 2100);
+                    
+                }, 600);
 
-        // Начать мини-игру
-        function startMinigame(type) {
-            if (type === "timer") {
-                document.getElementById("minigame-timer").style.display = "block";
-                let timeLeft = 3;
-                document.getElementById("time-left").innerText = timeLeft;
-                const timer = setInterval(() => {
+                this.timer = setInterval(() => {
                     timeLeft--;
-                    document.getElementById("time-left").innerText = timeLeft;
-                    if (timeLeft <= 0) {
-                        clearInterval(timer);
-                        document.getElementById("minigame-timer").style.display = "none";
-                        showAchievement("⏱️ Время вышло!");
+                    timeDisplay.innerText = `Время: ${timeLeft}`;
+                    if(timeLeft <= 0) {
+                        clearInterval(spawner);
+                        this.stop();
+                        alert(`Игра окончена! Сбито: ${score}`);
                     }
                 }, 1000);
-            } else if (type === "coins") {
-                document.getElementById("minigame-coins").style.display = "block";
-                document.getElementById("coins-collected").innerText = 0;
-                const coinArea = document.getElementById("coin-area");
-                coinArea.innerHTML = "";
-                for (let i = 0; i < 10; i++) {
-                    const coin = document.createElement("div");
-                    coin.classList.add("coin");
-                    coin.innerText = "🪙";
-                    coin.style.left = Math.random() * 80 + 10 + "%";
-                    coin.style.top = Math.random() * 80 + 10 + "%";
-                    coin.onclick = () => {
-                        coin.remove();
-                        let collected = parseInt(document.getElementById("coins-collected").innerText);
-                        collected++;
-                        document.getElementById("coins-collected").innerText = collected;
-                        if (collected >= 10) {
-                            count += 500;
-                            document.getElementById("counter").innerText = count;
-                            document.getElementById("minigame-coins").style.display = "none";
-                            showAchievement("🪙 Мини-игра пройдена! +500 очков!");
-                        }
-                    };
-                    coinArea.appendChild(coin);
-                }
-            }
-        }
+            },
 
-        // Начать мини-игру "Поймай астероид"
-        function startCatchAsteroid() {
-            document.getElementById("catch-asteroid").style.display = "block";
-            const field = document.getElementById("asteroid-field");
-            field.innerHTML = "";
-            const asteroid = document.createElement("div");
-            asteroid.classList.add("asteroid");
-            asteroid.onclick = () => {
-                asteroid.remove();
-                count += 100;
-                document.getElementById("counter").innerText = count;
-                showAchievement("☄️ Астероид пойман! +100 очков!");
-            };
-            field.appendChild(asteroid);
+            // Пример 2: Босс (Кликер на время)
+            startBoss(container, title) {
+                title.innerText = "👹 Победи Босса (HP: 50)";
+                let hp = 50;
+                
+                const boss = document.createElement("div");
+                boss.innerText = "👾";
+                boss.style.cssText = "font-size: 100px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); cursor: pointer; transition: 0.1s;";
+                
+                const hpBar = document.createElement("div");
+                hpBar.style.cssText = "position: absolute; top: 20%; left: 50%; transform: translateX(-50%); width: 200px; height: 20px; background: red; border: 2px solid white;";
+                const hpFill = document.createElement("div");
+                hpFill.style.cssText = "width: 100%; height: 100%; background: lime; transition: width 0.2s;";
+                hpBar.appendChild(hpFill);
 
-            // Анимация астероида
-            let posX = Math.random() * (field.offsetWidth - 30);
-            let posY = Math.random() * (field.offsetHeight - 30);
-            asteroid.style.left = posX + "px";
-            asteroid.style.top = posY + "px";
-
-            setInterval(() => {
-                if (asteroid.parentNode) {
-                    posX = Math.random() * (field.offsetWidth - 30);
-                    posY = Math.random() * (field.offsetHeight - 30);
-                    asteroid.style.left = posX + "px";
-                    asteroid.style.top = posY + "px";
-                }
-            }, 1000);
-        }
-
-        // Начать мини-игру "Клик по цели"
-        function startClickTarget() {
-            document.getElementById("click-target").style.display = "block";
-            const field = document.getElementById("target-field");
-            field.innerHTML = "";
-            const target = document.createElement("div");
-            target.classList.add("target");
-            target.onclick = () => {
-                target.remove();
-                count += 150;
-                document.getElementById("counter").innerText = count;
-                showAchievement("🎯 Цель поражена! +150 очков!");
-            };
-            field.appendChild(target);
-
-            // Анимация цели
-            let posX = Math.random() * (field.offsetWidth - 50);
-            let posY = Math.random() * (field.offsetHeight - 50);
-            target.style.left = posX + "px";
-            target.style.top = posY + "px";
-
-            setInterval(() => {
-                if (target.parentNode) {
-                    posX = Math.random() * (field.offsetWidth - 50);
-                    posY = Math.random() * (field.offsetHeight - 50);
-                    target.style.left = posX + "px";
-                    target.style.top = posY + "px";
-                }
-            }, 1500);
-        }
-
-        // Начать мини-игру "Танк"
-        function startTankGame() {
-            document.getElementById("tank-game").style.display = "block";
-            const field = document.getElementById("tank-field");
-            field.innerHTML = "";
-            const tank = document.createElement("div");
-            tank.classList.add("tank");
-            field.appendChild(tank);
-
-            // Кнопки управления
-            const controls = document.createElement("div");
-            controls.innerHTML = `
-                <button onclick="moveTank('left')">←</button>
-                <button onclick="moveTank('right')">→</button>
-                <button onclick="shootTank()">↑</button>
-            `;
-            field.appendChild(controls);
-
-            // Переменные для танка
-            let tankX = field.offsetWidth / 2 - 25;
-            tank.style.left = tankX + "px";
-
-            // Функция движения танка
-            window.moveTank = function(direction) {
-                if (direction === "left" && tankX > 0) tankX -= 10;
-                if (direction === "right" && tankX < field.offsetWidth - 50) tankX += 10;
-                tank.style.left = tankX + "px";
-            };
-
-            // Функция выстрела
-            window.shootTank = function() {
-                const bullet = document.createElement("div");
-                bullet.classList.add("tank-bullet");
-                bullet.style.left = (tankX + 22.5) + "px";
-                bullet.style.bottom = "40px";
-                field.appendChild(bullet);
-
-                let bulletY = 40;
-                const bulletInterval = setInterval(() => {
-                    bulletY += 5;
-                    bullet.style.bottom = bulletY + "px";
-                    if (bulletY > field.offsetHeight) {
-                        clearInterval(bulletInterval);
-                        bullet.remove();
+                boss.onclick = () => {
+                    hp--;
+                    hpFill.style.width = (hp / 50 * 100) + "%";
+                    boss.style.transform = "translate(-50%, -50%) scale(0.9)";
+                    setTimeout(() => boss.style.transform = "translate(-50%, -50%) scale(1)", 50);
+                    
+                    if(hp <= 0) {
+                        this.stop();
+                        Game.state.score += 5000;
+                        UI.showToast("БОСС ПОВЕРЖЕН! +5000");
                     }
-                }, 50);
-            };
-        }
+                };
 
-        // Начать мини-игру "Битва"
-        function startBattleGame() {
-            document.getElementById("battle-game").style.display = "block";
-            const field = document.getElementById("battle-field");
-            field.innerHTML = "";
-            const player = document.createElement("div");
-            player.classList.add("player");
-            field.appendChild(player);
+                container.appendChild(hpBar);
+                container.appendChild(boss);
+            },
+            
+            startWheel(container, title) {
+                title.innerText = "🎡 Рулетка Удачи";
+                // Упрощенная визуализация рулетки
+                const wheel = document.createElement("div");
+                wheel.style.cssText = "width: 250px; height: 250px; border-radius: 50%; background: conic-gradient(red 0 90deg, blue 90deg 180deg, green 180deg 270deg, gold 270deg 360deg); margin: 50px auto; position: relative; transition: transform 3s cubic-bezier(0.25, 0.1, 0.25, 1);";
+                
+                const arrow = document.createElement("div");
+                arrow.style.cssText = "width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent; border-top: 20px solid white; position: absolute; top: 40px; left: 50%; transform: translateX(-50%); z-index: 5;";
+                
+                const btn = document.createElement("button");
+                btn.innerText = "КРУТИТЬ";
+                btn.className = "btn-buy";
+                btn.style.cssText = "position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%);";
+                
+                let spun = false;
+                
+                btn.onclick = () => {
+                    if(spun) return;
+                    spun = true;
+                    const deg = Math.floor(Math.random() * 360 + 720); // минимум 2 оборота
+                    wheel.style.transform = `rotate(${deg}deg)`;
+                    
+                    setTimeout(() => {
+                        UI.showToast("Выигрыш: 1000 монет!");
+                        Game.state.score += 1000;
+                        UI.updateStats();
+                        setTimeout(() => this.stop(), 1000);
+                    }, 3000);
+                };
 
-            // Кнопки управления
-            const controls = document.createElement("div");
-            controls.innerHTML = `
-                <button onclick="movePlayer('left')">←</button>
-                <button onclick="movePlayer('right')">→</button>
-                <button onclick="shootPlayer()">↑</button>
-            `;
-            field.appendChild(controls);
-
-            // Переменные для игрока
-            let playerX = field.offsetWidth / 2 - 25;
-            player.style.left = playerX + "px";
-
-            // Функция движения игрока
-            window.movePlayer = function(direction) {
-                if (direction === "left" && playerX > 0) playerX -= 10;
-                if (direction === "right" && playerX < field.offsetWidth - 50) playerX += 10;
-                player.style.left = playerX + "px";
-            };
-
-            // Функция выстрела
-            window.shootPlayer = function() {
-                const bullet = document.createElement("div");
-                bullet.classList.add("bullet");
-                bullet.style.left = (playerX + 22.5) + "px";
-                bullet.style.bottom = "60px";
-                field.appendChild(bullet);
-
-                let bulletY = 60;
-                const bulletInterval = setInterval(() => {
-                    bulletY += 5;
-                    bullet.style.bottom = bulletY + "px";
-                    if (bulletY > field.offsetHeight) {
-                        clearInterval(bulletInterval);
-                        bullet.remove();
-                    }
-                }, 50);
-            };
-        }
-
-        // Начать мини-игру "Ракета"
-        function startRocketGame() {
-            document.getElementById("rocket-game").style.display = "block";
-            const field = document.getElementById("rocket-field");
-            field.innerHTML = "";
-            const rocket = document.createElement("div");
-            rocket.classList.add("rocket");
-            field.appendChild(rocket);
-
-            // Кнопки управления
-            const controls = document.createElement("div");
-            controls.innerHTML = `
-                <button onclick="moveRocket('left')">←</button>
-                <button onclick="moveRocket('right')">→</button>
-            `;
-            field.appendChild(controls);
-
-            // Переменные для ракеты
-            let rocketX = field.offsetWidth / 2 - 15;
-            rocket.style.left = rocketX + "px";
-
-            // Функция движения ракеты
-            window.moveRocket = function(direction) {
-                if (direction === "left" && rocketX > 0) rocketX -= 10;
-                if (direction === "right" && rocketX < field.offsetWidth - 30) rocketX += 10;
-                rocket.style.left = rocketX + "px";
-            };
-
-            // Генерация препятствий
-            setInterval(() => {
-                const obstacle = document.createElement("div");
-                obstacle.classList.add("obstacle");
-                obstacle.style.left = Math.random() * (field.offsetWidth - 40) + "px";
-                obstacle.style.top = "-40px";
-                field.appendChild(obstacle);
-
-                let obstacleY = -40;
-                const obstacleInterval = setInterval(() => {
-                    obstacleY += 5;
-                    obstacle.style.top = obstacleY + "px";
-                    if (obstacleY > field.offsetHeight) {
-                        clearInterval(obstacleInterval);
-                        obstacle.remove();
-                    }
-                }, 100);
-            }, 2000);
-        }
-
-        // Начать мини-игру "Лабиринт"
-        function startMazeGame() {
-            document.getElementById("maze-game").style.display = "block";
-            const field = document.getElementById("maze-field");
-            field.innerHTML = "";
-
-            // Игрок
-            const player = document.createElement("div");
-            player.classList.add("maze-player");
-            field.appendChild(player);
-
-            // Конец
-            const end = document.createElement("div");
-            end.classList.add("maze-end");
-            field.appendChild(end);
-
-            // Стены
-            for (let i = 0; i < 5; i++) {
-                const wall = document.createElement("div");
-                wall.classList.add("maze-wall");
-                wall.style.width = Math.random() * 200 + 50 + "px";
-                wall.style.height = "10px";
-                wall.style.top = Math.random() * 280 + 10 + "px";
-                wall.style.left = Math.random() * 280 + 10 + "px";
-                field.appendChild(wall);
+                container.appendChild(arrow);
+                container.appendChild(wheel);
+                container.appendChild(btn);
             }
+        };
 
-            // Переменные для игрока
-            let playerX = 10;
-            let playerY = 10;
+        // ЗАПУСК
+        window.onload = () => Game.init();
 
-            // Функция движения игрока
-            document.addEventListener("keydown", (e) => {
-                if (e.key === "ArrowLeft" && playerX > 0) playerX -= 10;
-                if (e.key === "ArrowRight" && playerX < field.offsetWidth - 20) playerX += 10;
-                if (e.key === "ArrowUp" && playerY > 0) playerY -= 10;
-                if (e.key === "ArrowDown" && playerY < field.offsetHeight - 20) playerY += 10;
-                player.style.left = playerX + "px";
-                player.style.top = playerY + "px";
-
-                // Проверка на конец
-                if (playerX >= 270 && playerY >= 270) {
-                    count += 1000;
-                    document.getElementById("counter").innerText = count;
-                    showAchievement("🧩 Лабиринт пройден! +1000 очков!");
-                }
-            });
-        }
-
-        // Начать мини-игру "Пинг-понг"
-        function startPingPongGame() {
-            document.getElementById("ping-pong-game").style.display = "block";
-            const field = document.getElementById("ping-pong-field");
-            field.innerHTML = "";
-
-            // Ракетки
-            const paddleLeft = document.createElement("div");
-            paddleLeft.classList.add("paddle", "paddle-left");
-            field.appendChild(paddleLeft);
-
-            const paddleRight = document.createElement("div");
-            paddleRight.classList.add("paddle", "paddle-right");
-            field.appendChild(paddleRight);
-
-            // Мяч
-            const ball = document.createElement("div");
-            ball.classList.add("ball");
-            ball.style.left = "140px";
-            ball.style.top = "140px";
-            field.appendChild(ball);
-
-            // Переменные мяча
-            let ballX = 140;
-            let ballY = 140;
-            let ballSpeedX = 5;
-            let ballSpeedY = 5;
-
-            // Функция движения мяча
-            setInterval(() => {
-                ballX += ballSpeedX;
-                ballY += ballSpeedY;
-                ball.style.left = ballX + "px";
-                ball.style.top = ballY + "px";
-
-                // Отскок от стен
-                if (ballY <= 0 || ballY >= field.offsetHeight - 20) ballSpeedY = -ballSpeedY;
-                if (ballX <= 0 || ballX >= field.offsetWidth - 20) ballSpeedX = -ballSpeedX;
-
-                // Отскок от ракеток
-                const paddleLeftRect = paddleLeft.getBoundingClientRect();
-                const paddleRightRect = paddleRight.getBoundingClientRect();
-                const ballRect = ball.getBoundingClientRect();
-
-                if (ballRect.left <= paddleLeftRect.right && ballRect.top >= paddleLeftRect.top && ballRect.bottom <= paddleLeftRect.bottom) {
-                    ballSpeedX = -ballSpeedX;
-                }
-                if (ballRect.right >= paddleRightRect.left && ballRect.top >= paddleRightRect.top && ballRect.bottom <= paddleRightRect.bottom) {
-                    ballSpeedX = -ballSpeedX;
-                }
-            }, 50);
-
-            // Управление ракетками
-            document.addEventListener("keydown", (e) => {
-                if (e.key === "w" && paddleLeft.offsetTop > 0) paddleLeft.style.top = (paddleLeft.offsetTop - 10) + "px";
-                if (e.key === "s" && paddleLeft.offsetTop < field.offsetHeight - 60) paddleLeft.style.top = (paddleLeft.offsetTop + 10) + "px";
-                if (e.key === "ArrowUp" && paddleRight.offsetTop > 0) paddleRight.style.top = (paddleRight.offsetTop - 10) + "px";
-                if (e.key === "ArrowDown" && paddleRight.offsetTop < field.offsetHeight - 60) paddleRight.style.top = (paddleRight.offsetTop + 10) + "px";
-            });
-        }
-
-        // Начать мини-игру "Шахта"
-        function startMineGame() {
-            document.getElementById("mine-game").style.display = "block";
-            const field = document.getElementById("mine-field");
-            field.innerHTML = "";
-
-            // Шахтер
-            const miner = document.createElement("div");
-            miner.classList.add("miner");
-            field.appendChild(miner);
-
-            // Кнопки управления
-            const controls = document.createElement("div");
-            controls.innerHTML = `
-                <button onclick="moveMiner('left')">←</button>
-                <button onclick="moveMiner('right')">→</button>
-                <button onclick="moveMiner('up')">↑</button>
-                <button onclick="moveMiner('down')">↓</button>
-            `;
-            field.appendChild(controls);
-
-            // Переменные для шахтера
-            let minerX = field.offsetWidth / 2 - 15;
-            let minerY = field.offsetHeight - 40;
-            miner.style.left = minerX + "px";
-            miner.style.bottom = "10px";
-
-            // Функция движения шахтера
-            window.moveMiner = function(direction) {
-                if (direction === "left" && minerX > 0) minerX -= 10;
-                if (direction === "right" && minerX < field.offsetWidth - 30) minerX += 10;
-                if (direction === "up" && minerY < field.offsetHeight - 30) minerY += 10;
-                if (direction === "down" && minerY > 0) minerY -= 10;
-                miner.style.left = minerX + "px";
-                miner.style.bottom = (field.offsetHeight - minerY) + "px";
-            };
-
-            // Генерация руды и камней
-            setInterval(() => {
-                if (Math.random() > 0.5) {
-                    const ore = document.createElement("div");
-                    ore.classList.add("ore");
-                    ore.style.left = Math.random() * (field.offsetWidth - 20) + "px";
-                    ore.style.top = Math.random() * (field.offsetHeight - 20) + "px";
-                    field.appendChild(ore);
-
-                    ore.onclick = () => {
-                        ore.remove();
-                        count += 50;
-                        document.getElementById("counter").innerText = count;
-                        showAchievement("⛏️ Руда добыта! +50 очков!");
-                    };
-                } else {
-                    const rock = document.createElement("div");
-                    rock.classList.add("rock");
-                    rock.style.left = Math.random() * (field.offsetWidth - 20) + "px";
-                    rock.style.top = Math.random() * (field.offsetHeight - 20) + "px";
-                    field.appendChild(rock);
-                }
-            }, 1000);
-        }
-
-        // Клик по таймеру
-        function clickTimer() {
-            const timer = document.getElementById("timer");
-            if (timer.classList.contains("green")) {
-                count += 100;
-                document.getElementById("counter").innerText = count;
-                document.getElementById("minigame-timer").style.display = "none";
-                showAchievement("⏱️ Успешно! +100 очков!");
-            } else {
-                document.getElementById("minigame-timer").style.display = "none";
-                showAchievement("⏱️ Промахнулся!");
-            }
-        }
-
-        // Анимация таймера
-        setInterval(() => {
-            const timer = document.getElementById("timer");
-            if (timer) {
-                if (Math.random() > 0.5) {
-                    timer.classList.add("green");
-                } else {
-                    timer.classList.remove("green");
-                }
-            }
-        }, 500);
-
-        // Улучшения
-        function buyUpgrade() {
-            const cost = parseInt(document.getElementById("cost1").innerText);
-            if (count >= cost) {
-                count -= cost;
-                perClick += 1;
-                document.getElementById("cost1").innerText = Math.floor(cost * 1.8);
-                document.getElementById("perClick").innerText = perClick.toFixed(2);
-                document.getElementById("counter").innerText = count;
-
-                // Прогресс по квесту
-                quests.forEach(quest => {
-                    if (!quest.completed && (quest.id === 3)) { // Улучшения
-                        quest.progress++;
-                    }
-                });
-                if (randomQuest && !randomQuest.completed && randomQuest.id === "random") {
-                    randomQuest.progress++;
-                }
-                checkQuests();
-
-                purchaseSound.currentTime = 0;
-                purchaseSound.play();
-            }
-        }
-
-        function buyAutoclicker() {
-            const cost = parseInt(document.getElementById("cost2").innerText);
-            if (count >= cost) {
-                count -= cost;
-                autoClick += 1;
-                document.getElementById("cost2").innerText = Math.floor(cost * 1.8);
-                document.getElementById("autoClick").innerText = autoClick.toFixed(2);
-                document.getElementById("counter").innerText = count;
-
-                // Прогресс по квесту
-                quests.forEach(quest => {
-                    if (!quest.completed && (quest.id === 3)) { // Улучшения
-                        quest.progress++;
-                    }
-                });
-                if (randomQuest && !randomQuest.completed && randomQuest.id === "random") {
-                    randomQuest.progress++;
-                }
-                checkQuests();
-
-                purchaseSound.currentTime = 0;
-                purchaseSound.play();
-            }
-        }
-
-        function buyMultiplier() {
-            const cost = parseInt(document.getElementById("cost3").innerText);
-            if (count >= cost) {
-                count -= cost;
-                multiplier *= 2;
-                document.getElementById("cost3").innerText = Math.floor(cost * 3);
-                document.getElementById("counter").innerText = count;
-
-                // Прогресс по квесту
-                quests.forEach(quest => {
-                    if (!quest.completed && (quest.id === 3)) { // Улучшения
-                        quest.progress++;
-                    }
-                });
-                if (randomQuest && !randomQuest.completed && randomQuest.id === "random") {
-                    randomQuest.progress++;
-                }
-                checkQuests();
-
-                purchaseSound.currentTime = 0;
-                purchaseSound.play();
-            }
-        }
-
-        function buyUpgradeX15() {
-            const cost = parseInt(document.getElementById("cost4").innerText);
-            if (count >= cost) {
-                count -= cost;
-                perClick *= 1.5;
-                document.getElementById("cost4").innerText = Math.floor(cost * 2);
-                document.getElementById("perClick").innerText = perClick.toFixed(2);
-                document.getElementById("counter").innerText = count;
-
-                purchaseSound.currentTime = 0;
-                purchaseSound.play();
-            }
-        }
-
-        function buyAutoclickerPlus() {
-            const cost = parseInt(document.getElementById("cost5").innerText);
-            if (count >= cost) {
-                count -= cost;
-                autoClick += 0.5;
-                document.getElementById("cost5").innerText = Math.floor(cost * 1.8);
-                document.getElementById("autoClick").innerText = autoClick.toFixed(2);
-                document.getElementById("counter").innerText = count;
-
-                purchaseSound.currentTime = 0;
-                purchaseSound.play();
-            }
-        }
-
-        function buyBuffBonus() {
-            const cost = parseInt(document.getElementById("cost6").innerText);
-            if (count >= cost) {
-                count -= cost;
-                // Добавляем бафф, который увеличивает длительность других баффов
-                addBuff("shield", 1, 60); // 60 сек защита от вражеских баффов
-                document.getElementById("cost6").innerText = Math.floor(cost * 2);
-                document.getElementById("counter").innerText = count;
-
-                purchaseSound.currentTime = 0;
-                purchaseSound.play();
-            }
-        }
-
-        function buyAutoclickerX2() {
-            const cost = parseInt(document.getElementById("cost7").innerText);
-            if (count >= cost) {
-                count -= cost;
-                autoClick *= 2;
-                document.getElementById("cost7").innerText = Math.floor(cost * 2);
-                document.getElementById("autoClick").innerText = autoClick.toFixed(2);
-                document.getElementById("counter").innerText = count;
-
-                purchaseSound.currentTime = 0;
-                purchaseSound.play();
-            }
-        }
-
-        // Автокликер
-        setInterval(() => {
-            let autoValue = autoClick;
-
-            // Применяем таланты
-            autoValue += talents.autoBonus.level * talents.autoBonus.value;
-
-            // Применяем умения
-            autoValue += skills.autoBonus.level * skills.autoBonus.value;
-
-            // Применяем баффы
-            buffs.forEach(buff => {
-                if (buff.type === "auto") autoValue += buff.amount;
-            });
-
-            // Применяем бонус галактики
-            autoValue *= galaxies[currentGalaxy].bonus;
-
-            if (autoValue > 0) {
-                count += autoValue * multiplier;
-                document.getElementById("counter").innerText = count;
-
-                // Прогресс по квесту (очки)
-                quests.forEach(quest => {
-                    if (!quest.completed && (quest.id === 1)) { // Очки
-                        quest.progress = count;
-                    }
-                });
-                if (randomQuest && !randomQuest.completed && randomQuest.id === "random") {
-                    randomQuest.progress = count;
-                }
-                checkQuests();
-            }
-        }, 1000);
-
-        // Клик
-        function clickCounter() {
-            let clickValue = perClick;
-
-            // Применяем таланты
-            clickValue += talents.clickBonus.level * talents.clickBonus.value;
-
-            // Применяем умения
-            clickValue += skills.clickBonus.level * skills.clickBonus.value;
-
-            // Применяем баффы
-            buffs.forEach(buff => {
-                if (buff.type === "click") clickValue += buff.amount;
-            });
-
-            // Применяем бонус галактики
-            clickValue *= galaxies[currentGalaxy].bonus;
-
-            count += clickValue * multiplier;
-            document.getElementById("counter").innerText = count;
-
-            // Прогресс по квестам
-            quests.forEach(quest => {
-                if (!quest.completed && (quest.id === 2)) { // Клик
-                    quest.progress++;
-                }
-            });
-
-            if (randomQuest && !randomQuest.completed && randomQuest.id === "random") {
-                randomQuest.progress++;
-            }
-
-            // Проверка уровня
-            checkLevel();
-
-            // Применение талантов
-            applyTalents();
-
-            // Применение умений
-            applySkills();
-
-            // Проверка квестов
-            checkQuests();
-
-            // Анимация +1
-            createClickEffect();
-
-            // Звук клика
-            clickSound.currentTime = 0;
-            clickSound.play();
-
-            // Проверка достижений
-            checkAchievements();
-        }
-
-        // Анимация при клике
-        function createClickEffect() {
-            const button = document.getElementById("clicker");
-            const effect = document.createElement("div");
-            effect.classList.add("click-effect");
-            effect.innerText = `+${(perClick * galaxies[currentGalaxy].bonus).toFixed(2)}`;
-            effect.style.left = Math.random() * 80 + 10 + "%";
-            effect.style.top = "50%";
-            document.body.appendChild(effect);
-
-            setTimeout(() => {
-                effect.remove();
-            }, 1000);
-        }
-
-        // Проверка достижений
-        function checkAchievements() {
-            for (let target of achievements) {
-                if (count >= target && !unlocked.has(target)) {
-                    unlocked.add(target);
-                    showAchievement(`Достижение: ${target} очков!`);
-                    achievementSound.currentTime = 0;
-                    achievementSound.play();
-                }
-            }
-        }
-
-        // Отображение достижения
-        function showAchievement(text) {
-            const achievement = document.getElementById("achievement");
-            achievement.innerText = text;
-            achievement.style.display = "block";
-            setTimeout(() => {
-                achievement.style.display = "none";
-            }, 3000);
-        }
-
-        // Обновление случайного квеста раз в 30 секунд
-        setInterval(updateRandomQuest, 30000);
-
-        // Сохранение каждые 5 секунд
-        function saveGame() {
-            localStorage.setItem('clickerSave', JSON.stringify({
-                count: count,
-                level: level,
-                perClick: perClick,
-                autoClick: autoClick,
-                multiplier: multiplier,
-                talentPoints: talentPoints,
-                skillPoints: skillPoints,
-                currentSkin: currentSkin,
-                currentGalaxy: currentGalaxy,
-                story: story,
-                battle: battle,
-                quests: quests,
-                talents: talents,
-                skills: skills,
-                unlocked: Array.from(unlocked),
-                buffs: buffs,
-                lastRandomQuestTime: lastRandomQuestTime,
-                randomQuest: randomQuest
-            }));
-        }
-
-        setInterval(saveGame, 5000);
     </script>
-
 </body>
 </html>
