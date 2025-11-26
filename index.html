@@ -3,233 +3,234 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Cosmic Clicker</title>
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <title>PROTOCOL: OMEGA</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;800&family=Russo+One&display=swap" rel="stylesheet">
     <style>
         :root {
-            --c-primary: #00fff2;
-            --c-secondary: #ff00aa;
-            --c-gold: #ffd700;
-            --c-dark: #0a0a10;
-            --c-panel: rgba(10, 16, 30, 0.85);
-            --font-main: 'Rajdhani', sans-serif;
-            --font-mono: 'Share Tech Mono', monospace;
+            --primary: #0ff;
+            --secondary: #f0f;
+            --warning: #ff0;
+            --danger: #f00;
+            --bg: #050505;
+            --panel: rgba(10, 20, 30, 0.9);
+            --glass: rgba(255, 255, 255, 0.05);
+            --border: 1px solid rgba(0, 255, 255, 0.2);
+            --shadow: 0 0 15px rgba(0, 255, 255, 0.3);
         }
+
+        * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
 
         body {
-            background-color: #000;
-            margin: 0;
-            overflow: hidden;
-            font-family: var(--font-main);
-            color: white;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            user-select: none;
+            margin: 0; background: var(--bg); color: #fff;
+            font-family: 'JetBrains Mono', monospace;
+            height: 100vh; overflow: hidden;
+            display: grid;
+            grid-template-rows: 60px 1fr 250px;
         }
 
-        /* --- CRT EFFECT OVERLAY --- */
-        .scanlines {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        /* --- CRT EFFECTS --- */
+        .crt::before {
+            content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
             background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            background-size: 100% 2px, 3px 100%;
-            pointer-events: none;
-            z-index: 9999;
+            background-size: 100% 2px, 3px 100%; pointer-events: none; z-index: 999;
         }
-        .vignette {
+        .glitch-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(0,0,0,0.8) 100%);
-            pointer-events: none;
-            z-index: 9998;
+            background: rgba(255, 0, 0, 0.1); display: none; z-index: 900;
+            pointer-events: none; mix-blend-mode: overlay;
         }
-
-        /* --- CANVAS LAYERS --- */
-        #bg-canvas { position: absolute; top: 0; left: 0; z-index: -1; }
-        #particle-canvas { position: absolute; top: 0; left: 0; z-index: 50; pointer-events: none; }
-
-        /* --- UI HEADER --- */
-        header {
-            padding: 15px 25px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: linear-gradient(180deg, rgba(0,0,0,0.9), transparent);
-            z-index: 100;
-        }
-        .resource-box { display: flex; flex-direction: column; }
-        .score { font-family: var(--font-mono); font-size: 2rem; color: var(--c-primary); text-shadow: 0 0 15px var(--c-primary); letter-spacing: 2px; }
-        .sub-score { font-size: 0.8rem; color: #889; text-transform: uppercase; letter-spacing: 1px; }
+        @keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 10% { transform: translate(-1px, -2px) rotate(-1deg); } 20% { transform: translate(-3px, 0px) rotate(1deg); } 30% { transform: translate(3px, 2px) rotate(0deg); } 40% { transform: translate(1px, -1px) rotate(1deg); } 50% { transform: translate(-1px, 2px) rotate(-1deg); } 60% { transform: translate(-3px, 1px) rotate(0deg); } 70% { transform: translate(3px, 1px) rotate(-1deg); } 80% { transform: translate(-1px, -1px) rotate(1deg); } 90% { transform: translate(1px, 2px) rotate(0deg); } 100% { transform: translate(1px, -2px) rotate(-1deg); } }
         
-        /* --- MAIN GAME AREA --- */
-        #universe {
-            flex: 1;
-            position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        .shake-anim { animation: shake 0.5s; animation-iteration-count: infinite; }
+
+        /* --- LAYOUT --- */
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 20px; border-bottom: var(--border); background: rgba(0,0,0,0.8);
+            z-index: 10;
+        }
+        .currency { font-size: 1.5rem; color: var(--primary); text-shadow: var(--shadow); font-weight: 800; }
+        .stats-bar { font-size: 0.8rem; color: #888; display: flex; gap: 20px; }
+
+        #main-view {
+            position: relative; display: flex; justify-content: center; align-items: center;
             perspective: 1000px;
         }
-
-        /* PLANET EVOLUTION STYLES */
-        .planet-container { position: relative; width: 220px; height: 220px; cursor: pointer; transition: transform 0.05s; }
-        .planet-container:active { transform: scale(0.95); }
         
-        .planet {
-            width: 100%; height: 100%;
+        /* CANVAS LAYERS */
+        #bg-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; opacity: 0.5; }
+        #fx-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 20; pointer-events: none; }
+
+        /* THE CORE */
+        .core-container { position: relative; z-index: 10; }
+        #core {
+            width: 220px; height: 220px;
             border-radius: 50%;
-            transition: all 1s ease;
+            background: radial-gradient(circle at 30% 30%, #fff, var(--primary), #000);
+            box-shadow: 0 0 50px var(--primary), inset 0 0 60px #000;
+            cursor: pointer;
+            transition: transform 0.1s;
             position: relative;
-            z-index: 10;
-            box-shadow: inset -30px -30px 50px rgba(0,0,0,0.8);
         }
+        #core:active { transform: scale(0.95); }
         
-        /* Stages */
-        .stage-1 { background: radial-gradient(circle at 30% 30%, #888, #333); box-shadow: 0 0 20px rgba(100,100,100,0.2); } /* Asteroid */
-        .stage-2 { background: radial-gradient(circle at 30% 30%, #4facfe, #00f2ff, #0048ff); box-shadow: 0 0 40px rgba(0, 242, 255, 0.4); } /* Earth-like */
-        .stage-3 { background: radial-gradient(circle at 30% 30%, #ff9d00, #ff4500, #8b0000); box-shadow: 0 0 60px rgba(255, 69, 0, 0.6); animation: pulse-warm 3s infinite; } /* Star */
-        .stage-4 { background: radial-gradient(circle at 50% 50%, #fff, #00f2ff, #000); box-shadow: 0 0 80px rgba(255, 255, 255, 0.8); animation: pulse-fast 1s infinite; } /* Neutron */
-        .stage-5 { background: #000; border: 2px solid rgba(255,255,255,0.5); box-shadow: 0 0 100px #7000ff, inset 0 0 40px #000; } /* Black Hole */
-
-        @keyframes pulse-warm { 0%, 100% { box-shadow: 0 0 60px rgba(255,69,0,0.6); } 50% { box-shadow: 0 0 90px rgba(255,69,0,0.8); } }
-        @keyframes pulse-fast { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(0.98); opacity: 0.9; } }
-
-        /* GOLDEN COMET */
-        .comet {
-            position: absolute; width: 40px; height: 40px;
-            background: radial-gradient(#fff, var(--c-gold));
-            border-radius: 50%;
-            box-shadow: 0 0 20px var(--c-gold);
-            z-index: 20; cursor: pointer;
-            filter: blur(1px);
+        /* Overdrive Bar */
+        .overdrive-container {
+            position: absolute; bottom: -40px; left: 50%; transform: translateX(-50%);
+            width: 200px; height: 10px; background: #111; border: 1px solid #333;
+            border-radius: 5px; overflow: hidden;
         }
-        .comet::after {
-            content: ''; position: absolute; top: 10px; right: 20px;
-            width: 100px; height: 20px;
-            background: linear-gradient(to right, transparent, var(--c-gold));
-            transform: rotate(10deg); opacity: 0.6;
-        }
+        #overdrive-fill { width: 0%; height: 100%; background: linear-gradient(90deg, var(--primary), var(--secondary)); transition: width 0.2s; }
+        .overdrive-active #core { animation: shake 0.5s infinite; box-shadow: 0 0 100px var(--secondary), inset 0 0 20px var(--secondary); background: radial-gradient(circle at 30% 30%, #fff, var(--secondary), #000); }
 
-        /* --- SIDEBAR / TABS --- */
-        #controls {
-            height: 40%;
-            background: var(--c-panel);
-            backdrop-filter: blur(12px);
-            border-top: 1px solid rgba(255,255,255,0.1);
-            display: flex;
-            flex-direction: column;
-            z-index: 100;
-            box-shadow: 0 -10px 50px rgba(0,0,0,0.8);
+        /* --- HUD --- */
+        #ai-log {
+            position: absolute; top: 20px; left: 20px; width: 300px;
+            font-size: 0.8rem; color: var(--primary); opacity: 0.8;
+            pointer-events: none; z-index: 5; text-shadow: 0 0 5px var(--primary);
         }
+        .log-entry { margin-bottom: 5px; animation: fadeLog 5s forwards; }
+        @keyframes fadeLog { 0% { opacity: 0; transform: translateX(-20px); } 10% { opacity: 1; transform: translateX(0); } 90% { opacity: 1; } 100% { opacity: 0; } }
 
-        .tabs { display: flex; background: rgba(0,0,0,0.3); }
-        .tab-btn {
+        /* --- BOTTOM PANEL --- */
+        #dashboard {
+            background: var(--panel); border-top: var(--border);
+            display: flex; flex-direction: column; z-index: 30;
+            backdrop-filter: blur(10px);
+        }
+        .tabs { display: flex; border-bottom: 1px solid #333; }
+        .tab {
             flex: 1; padding: 15px; background: none; border: none;
-            color: #666; font-family: var(--font-main); font-weight: 700;
-            text-transform: uppercase; cursor: pointer; transition: 0.3s;
-            border-bottom: 2px solid transparent;
+            color: #666; font-family: 'JetBrains Mono'; font-weight: bold;
+            cursor: pointer; transition: 0.3s; text-transform: uppercase;
         }
-        .tab-btn.active { color: var(--c-primary); border-bottom: 2px solid var(--c-primary); background: rgba(0, 255, 242, 0.05); }
+        .tab.active { color: var(--primary); background: rgba(0, 255, 255, 0.1); border-bottom: 2px solid var(--primary); }
         
-        .panel-content { flex: 1; overflow-y: auto; padding: 15px; display: none; }
-        .panel-content.active { display: block; animation: fadeIn 0.3s; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .content-area { flex: 1; overflow-y: auto; padding: 15px; position: relative; }
+        .view-section { display: none; animation: slideUp 0.3s; }
+        .view-section.active { display: block; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Upgrade Items */
-        .item {
-            display: flex; align-items: center; justify-content: space-between;
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.05);
-            margin-bottom: 8px; padding: 10px; border-radius: 4px;
+        /* CARDS */
+        .upgrade-card {
+            display: flex; justify-content: space-between; align-items: center;
+            background: var(--glass); border: 1px solid rgba(255,255,255,0.05);
+            padding: 12px; margin-bottom: 8px; border-radius: 4px;
             transition: 0.2s;
         }
-        .item:hover { background: rgba(255,255,255,0.07); }
-        .item-info h4 { margin: 0; font-size: 1rem; color: #ddd; }
-        .item-info p { margin: 0; font-size: 0.75rem; color: #777; font-family: var(--font-mono); }
-        
-        .buy-btn {
-            background: transparent; border: 1px solid var(--c-primary); color: var(--c-primary);
-            padding: 6px 12px; font-family: var(--font-mono); cursor: pointer; border-radius: 2px;
-            min-width: 80px; text-align: right; transition: 0.2s;
+        .upgrade-card:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.1); }
+        .btn-buy {
+            background: transparent; border: 1px solid var(--primary); color: var(--primary);
+            padding: 5px 15px; cursor: pointer; font-family: inherit; font-weight: bold;
+            border-radius: 2px; min-width: 80px; transition: 0.2s;
         }
-        .buy-btn:hover { background: var(--c-primary); color: #000; box-shadow: 0 0 10px var(--c-primary); }
-        .buy-btn:disabled { border-color: #444; color: #444; cursor: not-allowed; box-shadow: none; background: transparent; }
+        .btn-buy:hover { background: var(--primary); color: #000; box-shadow: 0 0 15px var(--primary); }
+        .btn-buy:disabled { border-color: #444; color: #444; cursor: not-allowed; box-shadow: none; background: transparent; }
 
-        /* --- START OVERLAY --- */
-        #start-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 10000;
+        /* ARTIFACTS GRID */
+        .artifact-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; }
+        .artifact {
+            aspect-ratio: 1; border: 1px solid #444; background: #111;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
+            font-size: 2rem; position: relative; cursor: help;
         }
-        #start-btn {
-            padding: 15px 40px; font-size: 1.5rem; font-family: var(--font-main);
-            background: transparent; color: var(--c-primary); border: 2px solid var(--c-primary);
-            cursor: pointer; text-transform: uppercase; letter-spacing: 3px;
-            box-shadow: 0 0 20px var(--c-primary);
-            transition: 0.3s;
+        .artifact.locked { opacity: 0.3; filter: grayscale(100%); }
+        .artifact-tooltip {
+            position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+            background: #000; border: 1px solid var(--warning); padding: 5px;
+            font-size: 0.7rem; width: 150px; z-index: 100; display: none; color: var(--warning);
         }
-        #start-btn:hover { background: var(--c-primary); color: black; }
+        .artifact:hover .artifact-tooltip { display: block; }
+
+        /* HACK MINIGAME */
+        .hack-target {
+            position: absolute; width: 50px; height: 50px;
+            background: radial-gradient(var(--danger), transparent);
+            border: 2px solid var(--danger); border-radius: 50%;
+            cursor: pointer; z-index: 100; animation: pulseRed 0.5s infinite;
+        }
+        @keyframes pulseRed { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.2); opacity: 0.8; } 100% { transform: scale(1); opacity: 1; } }
+
+        /* START SCREEN */
+        #init-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 10000; display: flex; justify-content: center; align-items: center; flex-direction: column;
+        }
+        .start-btn {
+            font-size: 2rem; background: transparent; color: var(--primary);
+            border: 2px solid var(--primary); padding: 20px 40px; cursor: pointer;
+            font-family: 'Russo One', sans-serif; letter-spacing: 5px;
+            text-transform: uppercase; box-shadow: 0 0 30px var(--primary);
+            animation: pulseBtn 2s infinite;
+        }
+        @keyframes pulseBtn { 0% { box-shadow: 0 0 30px var(--primary); } 50% { box-shadow: 0 0 60px var(--primary); } 100% { box-shadow: 0 0 30px var(--primary); } }
 
     </style>
 </head>
-<body>
+<body class="crt">
 
-    <!-- Visual Effects Layers -->
-    <div class="scanlines"></div>
-    <div class="vignette"></div>
-    <canvas id="bg-canvas"></canvas>
-    <canvas id="particle-canvas"></canvas>
-
-    <!-- Start Screen (Required for AudioContext) -->
-    <div id="start-screen">
-        <h1 style="font-size: 3rem; margin-bottom: 20px; text-shadow: 0 0 20px var(--c-primary);">AETHER</h1>
-        <button id="start-btn">Initialize System</button>
+    <!-- Initial Screen -->
+    <div id="init-screen">
+        <h1 style="color: #fff; margin-bottom: 10px; font-family: 'Russo One'">PROTOCOL: OMEGA</h1>
+        <p style="color: #666; margin-bottom: 30px;">[CLICK TO INITIALIZE SYSTEM]</p>
+        <button class="start-btn" onclick="Game.init()">START</button>
     </div>
 
+    <!-- Effects -->
+    <canvas id="bg-canvas"></canvas>
+    <canvas id="fx-canvas"></canvas>
+    <div class="glitch-overlay" id="glitch-fx"></div>
+
+    <!-- Header -->
     <header>
-        <div class="resource-box">
-            <div class="score" id="ui-score">0</div>
-            <div class="sub-score">Энергия</div>
-        </div>
-        <div class="resource-box" style="align-items: flex-end;">
-            <div class="sub-score" style="color: var(--c-primary)">⚡ <span id="ui-per-sec">0</span>/сек</div>
-            <div class="sub-score">🔮 Материя: <span id="ui-matter">0</span></div>
+        <div class="currency">DATA: <span id="score">0</span></div>
+        <div class="stats-bar">
+            <span>IO/s: <span id="per-sec">0</span></span>
+            <span>CPU: <span id="heat-disp">0</span>%</span>
         </div>
     </header>
 
-    <div id="universe">
-        <div class="planet-container" id="planet-wrapper">
-            <div class="planet stage-1" id="planet"></div>
+    <!-- Main Game -->
+    <div id="main-view">
+        <div id="ai-log"></div>
+        
+        <!-- Hacking Minigame Layer -->
+        <div id="hack-layer" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;"></div>
+
+        <div class="core-container">
+            <div id="core" onpointerdown="Game.click(event)"></div>
+            <div class="overdrive-container">
+                <div id="overdrive-fill"></div>
+            </div>
+            <div style="text-align: center; margin-top: 10px; font-size: 0.8rem; color: #666;">CORE STATUS: <span id="core-status">STABLE</span></div>
         </div>
     </div>
 
-    <div id="controls">
+    <!-- Dashboard -->
+    <div id="dashboard">
         <div class="tabs">
-            <button class="tab-btn active" onclick="UI.tab('upgrades')">Системы</button>
-            <button class="tab-btn" onclick="UI.tab('research')">Ядро</button>
-            <button class="tab-btn" onclick="UI.tab('settings')">Лог</button>
+            <button class="tab active" onclick="UI.tab('upgrades')">СИСТЕМЫ</button>
+            <button class="tab" onclick="UI.tab('artifacts')">АРТЕФАКТЫ</button>
+            <button class="tab" onclick="UI.tab('prestige')">ЯДРО [RESET]</button>
         </div>
 
-        <div id="tab-upgrades" class="panel-content active">
-            <!-- Generated by JS -->
+        <div id="tab-upgrades" class="content-area view-section active">
+            <!-- JS Generated -->
         </div>
-        
-        <div id="tab-research" class="panel-content">
-            <div class="item">
-                <div class="item-info">
-                    <h4 style="color: var(--c-secondary)">Квантовый Сброс</h4>
-                    <p>Преобразовать энергию в Тёмную Материю</p>
-                    <p style="color: #aaa; margin-top: 5px;">Бонус: <span id="prestige-bonus">0</span>%</p>
-                </div>
-                <button class="buy-btn" onclick="Game.prestige()">RESET</button>
+
+        <div id="tab-artifacts" class="content-area view-section">
+            <div class="artifact-grid" id="artifact-list">
+                <!-- JS Generated -->
             </div>
         </div>
 
-        <div id="tab-settings" class="panel-content">
-            <div style="font-family: var(--font-mono); font-size: 0.8rem; color: #666;">
-                <p>> SYSTEM READY...</p>
-                <p>> AUDIO ENGINE: ONLINE</p>
-                <p>> VERSION: 4.0.1 INDIE_BUILD</p>
-                <div id="game-log"></div>
+        <div id="tab-prestige" class="content-area view-section">
+            <div style="text-align: center; padding: 20px;">
+                <h2 style="color: var(--secondary)">ПЕРЕЗАГРУЗКА ПРОТОКОЛА</h2>
+                <p>Сбросить все данные для получения <span style="color: var(--secondary)">ТЁМНОГО КОДА</span>.</p>
+                <p style="margin: 20px 0; font-size: 1.2rem;">Текущий бонус: <span style="color: var(--primary)">+<span id="prestige-bonus">0</span>%</span> к добыче.</p>
+                <p>Вы получите: <span id="prestige-gain" style="color: var(--secondary); font-weight: bold; font-size: 1.5rem;">0</span></p>
+                <button class="btn-buy" style="width: 100%; padding: 15px; border-color: var(--secondary); color: var(--secondary); margin-top: 10px;" onclick="Game.prestige()">ВЫПОЛНИТЬ СБРОС</button>
             </div>
         </div>
     </div>
@@ -238,341 +239,405 @@
         /* --- AUDIO ENGINE (Synthesizer) --- */
         const AudioSys = {
             ctx: null,
+            gain: null,
+            notes: [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25], // C Major Scale
             init() {
-                window.AudioContext = window.AudioContext || window.webkitAudioContext;
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
                 this.ctx = new AudioContext();
+                this.gain = this.ctx.createGain();
+                this.gain.gain.value = 0.1;
+                this.gain.connect(this.ctx.destination);
             },
-            playTone(freq, type, duration, vol = 0.1) {
+            playTone(freq, type = 'sine', duration = 0.1, vol = 0.1) {
                 if (!this.ctx) return;
                 const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                
-                osc.type = type; // sine, square, sawtooth, triangle
+                const noteGain = this.ctx.createGain();
+                osc.type = type;
                 osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-                
-                gain.gain.setValueAtTime(vol, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
-                
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
+                noteGain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                noteGain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+                osc.connect(noteGain);
+                noteGain.connect(this.gain);
                 osc.start();
                 osc.stop(this.ctx.currentTime + duration);
             },
-            sfxClick() { this.playTone(600 + Math.random()*200, 'sine', 0.15, 0.1); },
-            sfxBuy() { this.playTone(400, 'square', 0.1, 0.05); setTimeout(()=>this.playTone(600, 'square', 0.2, 0.05), 50); },
-            sfxEvent() { this.playTone(1000, 'triangle', 0.5, 0.1); this.playTone(2000, 'sine', 1.0, 0.05); }
+            clickSound(intensity) { 
+                // Play a note from the scale based on "heat" (overdrive)
+                const idx = Math.floor(intensity * (this.notes.length - 1));
+                const freq = this.notes[idx] || this.notes[0];
+                this.playTone(freq, 'triangle', 0.15, 0.1);
+                if(intensity > 0.8) this.playTone(freq/2, 'sawtooth', 0.2, 0.05); // Bass layer for high heat
+            },
+            upgradeSound() { 
+                this.playTone(440, 'square', 0.1, 0.1); 
+                setTimeout(() => this.playTone(880, 'square', 0.2, 0.1), 100); 
+            },
+            errorSound() { this.playTone(150, 'sawtooth', 0.3, 0.2); },
+            glitchSound() { 
+                for(let i=0; i<5; i++) 
+                    setTimeout(() => this.playTone(100 + Math.random()*1000, 'sawtooth', 0.05, 0.1), i*50); 
+            }
         };
 
-        /* --- PARTICLE SYSTEM (Canvas) --- */
+        /* --- VISUALS (Matrix Rain & Particles) --- */
         const FX = {
-            canvas: document.getElementById('particle-canvas'),
-            ctx: document.getElementById('particle-canvas').getContext('2d'),
+            canvas: document.getElementById('fx-canvas'),
+            ctx: document.getElementById('fx-canvas').getContext('2d'),
+            bgCanvas: document.getElementById('bg-canvas'),
+            bgCtx: document.getElementById('bg-canvas').getContext('2d'),
             particles: [],
+            drops: [],
+            
             resize() {
-                this.canvas.width = window.innerWidth;
-                this.canvas.height = window.innerHeight;
+                this.canvas.width = window.innerWidth; this.canvas.height = window.innerHeight;
+                this.bgCanvas.width = window.innerWidth; this.bgCanvas.height = window.innerHeight;
+                // Matrix init
+                const columns = this.bgCanvas.width / 20;
+                this.drops = Array(Math.floor(columns)).fill(1);
             },
-            spawn(x, y, color = '#00fff2', count = 8) {
-                for(let i=0; i<count; i++) {
-                    const angle = Math.random() * Math.PI * 2;
-                    const speed = Math.random() * 4 + 2;
-                    this.particles.push({
-                        x, y,
-                        vx: Math.cos(angle) * speed,
-                        vy: Math.sin(angle) * speed,
-                        life: 1,
-                        color
-                    });
-                }
+
+            spawnParticle(x, y, text, color) {
+                this.particles.push({x, y, text, color, life: 1.0, vy: -2});
             },
-            spawnText(x, y, text) {
-                this.particles.push({
-                    x, y, vx:0, vy:-2, life: 1.5, text, type: 'text'
-                });
-            },
+
             loop() {
+                // Matrix Rain
+                this.bgCtx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+                this.bgCtx.fillRect(0, 0, this.bgCanvas.width, this.bgCanvas.height);
+                this.bgCtx.fillStyle = '#0F0';
+                this.bgCtx.font = '15px monospace';
+                for (let i = 0; i < this.drops.length; i++) {
+                    const text = String.fromCharCode(0x30A0 + Math.random() * 96);
+                    this.bgCtx.fillText(text, i * 20, this.drops[i] * 20);
+                    if (this.drops[i] * 20 > this.bgCanvas.height && Math.random() > 0.975) this.drops[i] = 0;
+                    this.drops[i]++;
+                }
+
+                // Particles (Foreground)
                 this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-                for(let i=this.particles.length-1; i>=0; i--) {
+                for (let i = this.particles.length - 1; i >= 0; i--) {
                     let p = this.particles[i];
-                    
-                    if(p.type === 'text') {
-                        this.ctx.fillStyle = `rgba(255, 255, 255, ${p.life})`;
-                        this.ctx.font = "bold 20px 'Share Tech Mono'";
-                        this.ctx.fillText(p.text, p.x, p.y);
-                        p.y += p.vy;
-                        p.life -= 0.02;
-                    } else {
-                        p.x += p.vx;
-                        p.y += p.vy;
-                        p.life -= 0.03;
-                        this.ctx.globalAlpha = p.life;
-                        this.ctx.fillStyle = p.color;
-                        this.ctx.beginPath();
-                        this.ctx.arc(p.x, p.y, 2, 0, Math.PI*2);
-                        this.ctx.fill();
-                        this.ctx.globalAlpha = 1;
-                    }
-                    if(p.life <= 0) this.particles.splice(i, 1);
+                    this.ctx.globalAlpha = p.life;
+                    this.ctx.fillStyle = p.color;
+                    this.ctx.font = "bold 20px 'JetBrains Mono'";
+                    this.ctx.fillText(p.text, p.x, p.y);
+                    p.y += p.vy;
+                    p.life -= 0.02;
+                    if (p.life <= 0) this.particles.splice(i, 1);
                 }
                 requestAnimationFrame(() => this.loop());
             }
         };
 
-        /* --- BACKGROUND (Stars) --- */
-        const BG = {
-            canvas: document.getElementById('bg-canvas'),
-            ctx: document.getElementById('bg-canvas').getContext('2d'),
-            stars: [],
-            init() {
-                this.resize();
-                for(let i=0; i<150; i++) this.stars.push({
-                    x: Math.random() * this.canvas.width,
-                    y: Math.random() * this.canvas.height,
-                    size: Math.random() * 2,
-                    speed: Math.random() * 0.5
-                });
-                this.loop();
-            },
-            resize() {
-                this.canvas.width = window.innerWidth;
-                this.canvas.height = window.innerHeight;
-            },
-            loop() {
-                this.ctx.fillStyle = '#000';
-                this.ctx.fillRect(0,0,this.canvas.width, this.canvas.height);
-                this.ctx.fillStyle = '#fff';
-                
-                this.stars.forEach(s => {
-                    s.y += s.speed;
-                    if(s.y > this.canvas.height) s.y = 0;
-                    this.ctx.globalAlpha = Math.random() * 0.5 + 0.3;
-                    this.ctx.beginPath();
-                    this.ctx.arc(s.x, s.y, s.size, 0, Math.PI*2);
-                    this.ctx.fill();
-                });
-                requestAnimationFrame(() => this.loop());
-            }
+        /* --- GAME DATA --- */
+        const DB = {
+            upgrades: [
+                { id: 'u1', name: 'Скрипт-майнер', desc: 'Автоматический сбор данных', base: 15, pow: 0.5, type: 'auto' },
+                { id: 'u2', name: 'Разгон CPU', desc: 'Усиливает клик', base: 100, pow: 1, type: 'click' },
+                { id: 'u3', name: 'Ботнет', desc: 'Сеть зараженных узлов', base: 1100, pow: 8, type: 'auto' },
+                { id: 'u4', name: 'Квантовый сервер', desc: 'Обработка в суперпозиции', base: 12000, pow: 40, type: 'auto' },
+                { id: 'u5', name: 'Нейросеть', desc: 'Самообучающийся ИИ', base: 130000, pow: 150, type: 'click' },
+                { id: 'u6', name: 'Сфера Дайсона', desc: 'Энергия звезды', base: 1000000, pow: 500, type: 'auto' }
+            ],
+            artifacts: [
+                { id: 'a1', name: 'Древний Чип', desc: 'Авто-майнеры на 50% эффективнее', chance: 0.01 },
+                { id: 'a2', name: 'Глючный Диск', desc: 'Шанс 5% на x10 клик', chance: 0.005 },
+                { id: 'a3', name: 'Тёмный Кристалл', desc: 'Овердрайв длится дольше', chance: 0.002 },
+                { id: 'a4', name: 'Код Омега', desc: '+100% ко всему доходу', chance: 0.0001 }
+            ]
         };
-
-        /* --- DATA & CONFIG --- */
-        const DB = [
-            { id: 'u1', name: 'Дрон-добытчик', desc: 'Автоматическая добыча', base: 15, pow: 1, type: 'auto' },
-            { id: 'u2', name: 'Лазерный бур', desc: 'Усиливает клик', base: 100, pow: 5, type: 'click' },
-            { id: 'u3', name: 'Грави-сеть', desc: 'Ловит энергию из вакуума', base: 1100, pow: 12, type: 'auto' },
-            { id: 'u4', name: 'Терраформер', desc: 'Изменяет структуру планеты', base: 12000, pow: 50, type: 'auto' },
-            { id: 'u5', name: 'Сингулярность', desc: 'Сжимает пространство', base: 130000, pow: 300, type: 'click' },
-            { id: 'u6', name: 'Звездная Кузница', desc: 'Создает материю', base: 1400000, pow: 1000, type: 'auto' }
-        ];
 
         /* --- GAME LOGIC --- */
         const Game = {
-            score: 0,
-            matter: 0,
-            upgrades: Array(DB.length).fill(0),
-            planetStage: 1,
-            lastTick: Date.now(),
-
-            get perClick() {
-                let val = 1;
-                DB.forEach((u, i) => { if(u.type === 'click') val += u.pow * this.upgrades[i]; });
-                return val * (1 + this.matter * 0.1);
+            state: {
+                score: 0,
+                darkMatter: 0,
+                upgrades: {},
+                artifacts: [],
+                startTime: Date.now()
             },
-            get perSec() {
-                let val = 0;
-                DB.forEach((u, i) => { if(u.type === 'auto') val += u.pow * this.upgrades[i]; });
-                return val * (1 + this.matter * 0.1);
+            temp: {
+                heat: 0,
+                overdrive: false,
+                clickMult: 1,
+                autoMult: 1
             },
 
             init() {
+                document.getElementById('init-screen').style.display = 'none';
+                AudioSys.init();
+                FX.resize();
+                FX.loop();
                 this.load();
-                this.loop();
-                this.startCometTimer();
+                UI.init();
+                
+                // Initialize Upgrades state
+                DB.upgrades.forEach(u => { if (!this.state.upgrades[u.id]) this.state.upgrades[u.id] = 0; });
+                
+                // Loops
+                setInterval(() => this.tick(), 100); // 10 times/sec logic
+                setInterval(() => this.save(), 15000);
+                setInterval(() => this.randomEvents(), 10000);
+
+                Log.add("СИСТЕМА ЗАПУЩЕНА. ОЖИДАНИЕ ВВОДА...");
+            },
+
+            tick() {
+                // Auto production
+                let auto = 0;
+                DB.upgrades.forEach(u => {
+                    if (u.type === 'auto') auto += u.pow * this.state.upgrades[u.id];
+                });
+                
+                // Multipliers
+                let mult = 1 + (this.state.darkMatter * 0.1); // Prestige
+                if (this.state.artifacts.includes('a1')) auto *= 1.5; // Artifact
+                if (this.state.artifacts.includes('a4')) mult *= 2;
+                if (this.temp.overdrive) mult *= 5;
+
+                const income = (auto * mult) / 10; // per 100ms
+                this.state.score += income;
+
+                // Heat decay
+                if (this.temp.overdrive) {
+                    this.temp.heat -= 0.5; // Drains fast in overdrive
+                    if (this.temp.heat <= 0) {
+                        this.temp.heat = 0;
+                        this.temp.overdrive = false;
+                        document.body.classList.remove('overdrive-active');
+                        document.getElementById('core-status').innerText = "STABLE";
+                        document.getElementById('core-status').style.color = "#666";
+                        AudioSys.playTone(100, 'sawtooth', 0.5);
+                        Log.add("СИСТЕМА ОХЛАЖДЕНА.");
+                    }
+                } else {
+                    this.temp.heat = Math.max(0, this.temp.heat - 0.2);
+                }
+
+                UI.update(auto * mult); // Show per second
             },
 
             click(e) {
-                this.score += this.perClick;
-                AudioSys.sfxClick();
+                let pow = 1;
+                DB.upgrades.forEach(u => {
+                    if (u.type === 'click') pow += u.pow * this.state.upgrades[u.id];
+                });
                 
-                // Visuals
-                const rect = document.getElementById('planet').getBoundingClientRect();
-                const x = e ? e.clientX : rect.left + rect.width/2;
-                const y = e ? e.clientY : rect.top + rect.height/2;
+                // Multipliers
+                let mult = 1 + (this.state.darkMatter * 0.1);
+                if (this.temp.overdrive) mult *= 5;
+                if (this.state.artifacts.includes('a2') && Math.random() < 0.05) {
+                    mult *= 10;
+                    FX.spawnParticle(e.clientX, e.clientY, "CRIT!", "#ff0");
+                    AudioSys.playTone(800, 'square', 0.1);
+                }
+                if (this.state.artifacts.includes('a4')) mult *= 2;
+
+                const total = pow * mult;
+                this.state.score += total;
+
+                // Heat Logic
+                if (!this.temp.overdrive) {
+                    this.temp.heat += 2;
+                    if (this.temp.heat >= 100) {
+                        this.temp.heat = 100;
+                        this.temp.overdrive = true;
+                        document.body.classList.add('overdrive-active');
+                        document.getElementById('core-status').innerText = "CRITICAL OVERDRIVE (x5)";
+                        document.getElementById('core-status').style.color = "var(--danger)";
+                        Log.add("!!! ПЕРЕГРЕВ ЯДРА !!! МОЩНОСТЬ x5");
+                        AudioSys.playTone(200, 'sawtooth', 1.0);
+                    }
+                }
+
+                // FX
+                FX.spawnParticle(e.clientX, e.clientY, `+${UI.format(total)}`, this.temp.overdrive ? 'var(--danger)' : 'var(--primary)');
+                AudioSys.clickSound(this.temp.heat / 100);
                 
-                FX.spawn(x, y, '#00fff2');
-                FX.spawnText(x, y - 20, '+' + UI.fmt(this.perClick));
-                
-                // Screen Shake Light
-                document.body.style.transform = `translate(${Math.random()*2-1}px, ${Math.random()*2-1}px)`;
-                setTimeout(() => document.body.style.transform = 'none', 50);
+                // Artifact Drop Chance
+                this.checkArtifacts();
             },
 
-            buy(idx) {
-                const u = DB[idx];
-                const cost = Math.floor(u.base * Math.pow(1.5, this.upgrades[idx]));
-                if(this.score >= cost) {
-                    this.score -= cost;
-                    this.upgrades[idx]++;
-                    AudioSys.sfxBuy();
-                    UI.log(`Куплено: ${u.name}`);
+            buy(id) {
+                const u = DB.upgrades.find(x => x.id === id);
+                const cost = Math.floor(u.base * Math.pow(1.5, this.state.upgrades[id]));
+                if (this.state.score >= cost) {
+                    this.state.score -= cost;
+                    this.state.upgrades[id]++;
+                    AudioSys.upgradeSound();
+                    UI.renderUpgrades(); // Refresh costs
+                } else {
+                    AudioSys.errorSound();
                 }
             },
 
-            loop() {
-                const now = Date.now();
-                const dt = (now - this.lastTick) / 1000;
-                if(dt >= 0.1) {
-                    this.score += this.perSec * dt;
-                    this.lastTick = now;
-                    this.checkEvolution();
-                    UI.update();
+            checkArtifacts() {
+                // Small chance on click to find artifact
+                if (Math.random() < 0.001) { // 0.1% per click
+                    const remaining = DB.artifacts.filter(a => !this.state.artifacts.includes(a.id));
+                    if (remaining.length > 0) {
+                        const art = remaining[Math.floor(Math.random() * remaining.length)];
+                        this.state.artifacts.push(art.id);
+                        Log.add(`НАЙДЕН АРТЕФАКТ: ${art.name}`);
+                        UI.renderArtifacts();
+                        AudioSys.playTone(1000, 'sine', 1.0);
+                    }
                 }
-                requestAnimationFrame(() => this.loop());
             },
 
-            checkEvolution() {
-                let stage = 1;
-                if(this.score > 5000) stage = 2;
-                if(this.score > 100000) stage = 3;
-                if(this.score > 1000000) stage = 4;
-                if(this.score > 10000000) stage = 5;
+            randomEvents() {
+                // Hacking Event
+                if (Math.random() < 0.2) { // 20% chance every 10s
+                    Log.add("ОБНАРУЖЕНО ВТОРЖЕНИЕ! БЛОКИРУЙТЕ УЗЛЫ!");
+                    this.spawnHackNode();
+                }
+            },
+
+            spawnHackNode() {
+                const node = document.createElement('div');
+                node.className = 'hack-target';
+                node.style.left = Math.random() * 80 + 10 + '%';
+                node.style.top = Math.random() * 60 + 20 + '%';
+                document.getElementById('hack-layer').appendChild(node);
                 
-                if(stage !== this.planetStage) {
-                    this.planetStage = stage;
-                    const p = document.getElementById('planet');
-                    p.className = `planet stage-${stage}`;
-                    AudioSys.sfxEvent();
-                    UI.log(`ЭВОЛЮЦИЯ ПЛАНЕТЫ: СТАДИЯ ${stage}`);
-                    FX.spawn(window.innerWidth/2, window.innerHeight/2, '#fff', 50);
-                }
-            },
+                AudioSys.glitchSound();
+                document.getElementById('glitch-fx').style.display = 'block';
+                setTimeout(() => document.getElementById('glitch-fx').style.display = 'none', 200);
 
-            prestige() {
-                if(this.score < 1000000) return;
-                const gain = Math.floor(Math.sqrt(this.score / 1000000));
-                if(confirm(`Сброс даст ${gain} Тёмной Материи. Продолжить?`)) {
-                    this.matter += gain;
-                    this.score = 0;
-                    this.upgrades.fill(0);
-                    this.planetStage = 0; 
-                    this.checkEvolution();
-                    this.save();
-                    UI.buildShop();
-                }
-            },
+                // Fail timeout
+                const timer = setTimeout(() => {
+                    if(node.parentNode) {
+                        node.remove();
+                        Log.add("ВЗЛОМ УСПЕШЕН. ПОТЕРЯ ДАННЫХ.");
+                        this.state.score = Math.max(0, this.state.score * 0.9); // Lose 10%
+                        AudioSys.errorSound();
+                    }
+                }, 2000);
 
-            spawnComet() {
-                const comet = document.createElement('div');
-                comet.className = 'comet';
-                const y = Math.random() * (window.innerHeight - 100) + 50;
-                comet.style.top = y + 'px';
-                comet.style.left = '-100px';
-                document.body.appendChild(comet);
-                
-                let x = -100;
-                const interval = setInterval(() => {
-                    x += 5;
-                    comet.style.left = x + 'px';
-                    if(x > window.innerWidth) { clearInterval(interval); comet.remove(); }
-                }, 16);
-
-                comet.onmousedown = () => {
-                    const bonus = this.perSec * 60 + this.perClick * 100;
-                    this.score += bonus;
-                    AudioSys.sfxEvent();
-                    FX.spawn(x, y, '#ffd700', 20);
-                    FX.spawnText(x, y, 'JACKPOT!');
-                    UI.log('ЗОЛОТАЯ КОМЕТА! БОНУС ПОЛУЧЕН');
-                    clearInterval(interval);
-                    comet.remove();
+                node.onpointerdown = (e) => {
+                    e.stopPropagation();
+                    clearTimeout(timer);
+                    node.remove();
+                    const bonus = this.state.score * 0.1 + 100;
+                    this.state.score += bonus;
+                    Log.add(`УГРОЗА УСТРАНЕНА. ПОЛУЧЕНО: ${UI.format(bonus)}`);
+                    AudioSys.upgradeSound();
+                    FX.spawnParticle(e.clientX, e.clientY, "SECURED", "#0f0");
                 };
             },
 
-            startCometTimer() {
-                setInterval(() => {
-                    if(Math.random() < 0.3) this.spawnComet(); // 30% chance every 30s
-                }, 30000);
-            },
-
-            save() { localStorage.setItem('AETHER_SAVE', JSON.stringify({s: this.score, m: this.matter, u: this.upgrades, t: Date.now()})); },
-            load() {
-                const d = JSON.parse(localStorage.getItem('AETHER_SAVE'));
-                if(d) { this.score = d.s; this.matter = d.m; this.upgrades = d.u; 
-                    // Offline progress
-                    const sec = (Date.now() - d.t)/1000;
-                    if(sec > 60) {
-                        const gain = this.perSec * sec;
-                        if(gain > 0) { this.score += gain; setTimeout(()=>alert(`Оффлайн доход: ${UI.fmt(gain)}`), 500); }
+            prestige() {
+                const gain = Math.floor(Math.sqrt(this.state.score / 1000000));
+                if (gain > 0) {
+                    if(confirm("ВЫПОЛНИТЬ ПОЛНЫЙ СБРОС?")) {
+                        this.state.darkMatter += gain;
+                        this.state.score = 0;
+                        DB.upgrades.forEach(u => this.state.upgrades[u.id] = 0);
+                        // Artifacts stay? Let's say yes for "Indie" fun
+                        this.save();
+                        location.reload();
                     }
                 }
+            },
+
+            save() { localStorage.setItem('PROTO_OMEGA', JSON.stringify(this.state)); },
+            load() {
+                const d = JSON.parse(localStorage.getItem('PROTO_OMEGA'));
+                if (d) this.state = { ...this.state, ...d };
             }
         };
 
-        /* --- UI --- */
-        const UI = {
-            buildShop() {
-                const div = document.getElementById('tab-upgrades');
-                div.innerHTML = '';
-                DB.forEach((u, i) => {
-                    const el = document.createElement('div');
-                    el.className = 'item';
-                    el.innerHTML = `
-                        <div class="item-info">
-                            <h4>${u.name}</h4>
-                            <p>${u.desc} (+${u.pow})</p>
-                        </div>
-                        <button class="buy-btn" id="btn-${i}" onclick="Game.buy(${i})">0</button>
-                    `;
-                    div.appendChild(el);
-                });
-            },
-            update() {
-                document.getElementById('ui-score').innerText = this.fmt(Game.score);
-                document.getElementById('ui-per-sec').innerText = this.fmt(Game.perSec);
-                document.getElementById('ui-matter').innerText = Game.matter;
-                document.getElementById('prestige-bonus').innerText = (Game.matter * 10);
+        /* --- LOG SYSTEM --- */
+        const Log = {
+            el: document.getElementById('ai-log'),
+            add(msg) {
+                const div = document.createElement('div');
+                div.className = 'log-entry';
+                div.innerText = `> ${msg}`;
+                this.el.prepend(div);
+                if (this.el.children.length > 5) this.el.lastChild.remove();
+            }
+        };
 
-                DB.forEach((u, i) => {
-                    const cost = Math.floor(u.base * Math.pow(1.5, Game.upgrades[i]));
-                    const btn = document.getElementById(`btn-${i}`);
-                    btn.innerText = this.fmt(cost);
-                    btn.disabled = Game.score < cost;
+        /* --- UI MANAGER --- */
+        const UI = {
+            init() {
+                this.renderUpgrades();
+                this.renderArtifacts();
+            },
+
+            update(perSec) {
+                document.getElementById('score').innerText = this.format(Game.state.score);
+                document.getElementById('per-sec').innerText = this.format(perSec);
+                document.getElementById('heat-disp').innerText = Math.floor(Game.temp.heat);
+                document.getElementById('overdrive-fill').style.width = Game.temp.heat + '%';
+                
+                // Update button states
+                DB.upgrades.forEach(u => {
+                    const cost = Math.floor(u.base * Math.pow(1.5, Game.state.upgrades[u.id]));
+                    const btn = document.getElementById(`btn-${u.id}`);
+                    if (btn) btn.disabled = Game.state.score < cost;
+                });
+
+                // Prestige info
+                const pGain = Math.floor(Math.sqrt(Game.state.score / 1000000));
+                document.getElementById('prestige-gain').innerText = pGain + " Т.М.";
+                document.getElementById('prestige-bonus').innerText = (Game.state.darkMatter * 10);
+            },
+
+            renderUpgrades() {
+                const c = document.getElementById('tab-upgrades');
+                c.innerHTML = '';
+                DB.upgrades.forEach(u => {
+                    const lvl = Game.state.upgrades[u.id];
+                    const cost = Math.floor(u.base * Math.pow(1.5, lvl));
+                    c.innerHTML += `
+                        <div class="upgrade-card">
+                            <div>
+                                <div style="color: #fff; font-weight:bold">${u.name} <span style="color:#666">[${lvl}]</span></div>
+                                <div style="font-size:0.8rem; color:#888">${u.desc}</div>
+                            </div>
+                            <button class="btn-buy" id="btn-${u.id}" onclick="Game.buy('${u.id}')">${this.format(cost)}</button>
+                        </div>
+                    `;
                 });
             },
-            fmt(n) {
-                if(n >= 1e6) return (n/1e6).toFixed(2) + 'M';
-                if(n >= 1e3) return (n/1e3).toFixed(1) + 'k';
-                return Math.floor(n);
+
+            renderArtifacts() {
+                const c = document.getElementById('artifact-list');
+                c.innerHTML = '';
+                DB.artifacts.forEach(a => {
+                    const unlocked = Game.state.artifacts.includes(a.id);
+                    c.innerHTML += `
+                        <div class="artifact ${unlocked ? '' : 'locked'}">
+                            ?
+                            <div class="artifact-tooltip">
+                                <strong>${unlocked ? a.name : '???'}</strong><br>
+                                ${unlocked ? a.desc : 'Найдите этот предмет'}
+                            </div>
+                        </div>
+                    `;
+                    // If unlocked, replace ? with Icon (Generated via CSS/Text for now)
+                    if(unlocked) c.lastElementChild.innerHTML = '★' + c.lastElementChild.innerHTML.substring(1);
+                });
             },
+
             tab(id) {
-                document.querySelectorAll('.panel-content').forEach(e => e.classList.remove('active'));
+                document.querySelectorAll('.view-section').forEach(e => e.classList.remove('active'));
                 document.getElementById(`tab-${id}`).classList.add('active');
-                document.querySelectorAll('.tab-btn').forEach(e => e.classList.remove('active'));
+                document.querySelectorAll('.tab').forEach(e => e.classList.remove('active'));
                 event.target.classList.add('active');
             },
-            log(msg) {
-                const l = document.getElementById('game-log');
-                l.innerHTML = `> ${msg}<br>` + l.innerHTML;
-                if(l.innerHTML.length > 500) l.innerHTML = l.innerHTML.substring(0, 500);
+
+            format(n) {
+                if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+                if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+                if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+                return Math.floor(n);
             }
         };
 
-        /* --- INITIALIZATION --- */
-        document.getElementById('start-btn').onclick = () => {
-            document.getElementById('start-screen').style.display = 'none';
-            AudioSys.init();
-            FX.resize();
-            BG.init();
-            UI.buildShop();
-            Game.init();
-            FX.loop();
-            
-            // Planet click listener
-            document.getElementById('planet-wrapper').addEventListener('mousedown', (e) => Game.click(e));
-            // Auto-save
-            setInterval(() => Game.save(), 10000);
-        };
-
-        window.onresize = () => { FX.resize(); BG.resize(); };
+        window.onresize = () => FX.resize();
 
     </script>
 </body>
